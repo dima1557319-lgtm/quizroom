@@ -40,8 +40,27 @@
   </button>
 
   <div id="code"></div>
+  
+<div id="qr-container"
+     style="display:none; margin:25px auto;">
+  <div id="qrcode"
+       style="display:flex; justify-content:center;
+              background:white; padding:20px;
+              width:fit-content; margin:auto;
+              border-radius:15px;">
+  </div>
+  <p>Отсканируйте QR-код для подключения</p>
+  <a id="joinLink"
+     href="#"
+     style="color:#a78bfa;">
+    Ссылка для игроков
+  </a>
+</div>
+
   <p id="status"></p>
 
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script type="module">
     import { supabase }
       from "./supabase-client.js";
