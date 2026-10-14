@@ -5,62 +5,124 @@
   <meta charset="UTF-8">
   <meta name="viewport"
         content="width=device-width, initial-scale=1">
-  <title>QuizRoom — Создать комнату</title>
+  <title>QuizRoom — Игровая комната</title>
+
   <style>
+    * { box-sizing: border-box; }
+
     body {
+      margin: 0;
+      min-height: 100vh;
       background: #0b0920;
       color: white;
       font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 440px;
+      padding: 32px 24px;
       text-align: center;
-      padding: 60px 20px;
+      background: #17132f;
+      border: 1px solid #39305f;
+      border-radius: 24px;
+      box-shadow: 0 0 40px #8b5cf622;
     }
+
+    h1 {
+      font-size: 38px;
+      color: #a78bfa;
+      margin: 0 0 10px;
+    }
+
+    p { color: #b8b4d2; }
+
     button {
-      background: #8b5cf6;
+      background: linear-gradient(
+        135deg, #8b5cf6, #6366f1
+      );
       color: white;
-      border: none;
+      border: 0;
       border-radius: 12px;
-      padding: 16px 30px;
-      font-size: 18px;
+      padding: 16px 24px;
+      font-size: 17px;
+      font-weight: bold;
       cursor: pointer;
+      width: 100%;
     }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: wait;
+    }
+
     #code {
-      font-size: 44px;
+      font-size: 48px;
       font-weight: bold;
       letter-spacing: 8px;
-      margin: 30px 0;
+      margin: 18px 0;
+    }
+
+    #roomDetails { display: none; }
+
+    #qrcode {
+      display: flex;
+      justify-content: center;
+      padding: 16px;
+      background: white;
+      border-radius: 16px;
+      width: fit-content;
+      margin: 20px auto;
+    }
+
+    #qrcode img {
+      max-width: 100%;
+    }
+
+    a {
+      color: #a78bfa;
+      overflow-wrap: anywhere;
+    }
+
+    #status {
+      font-size: 14px;
+      margin-top: 16px;
     }
   </style>
-</head>
-<body>
-  <h1>QuizRoom</h1>
-  <p>Создай свою игровую комнату</p>
 
-  <button id="createBtn">
-    Создать комнату
-  </button>
-
-  <div id="code"></div>
-  
-<div id="qr-container"
-     style="display:none; margin:25px auto;">
-  <div id="qrcode"
-       style="display:flex; justify-content:center;
-              background:white; padding:20px;
-              width:fit-content; margin:auto;
-              border-radius:15px;">
-  </div>
-  <p>Отсканируйте QR-код для подключения</p>
-  <a id="joinLink"
-     href="#"
-     style="color:#a78bfa;">
-    Ссылка для игроков
-  </a>
-</div>
-
-  <p id="status"></p>
-
-  
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+  <main class="card">
+    <h1>QuizRoom</h1>
+    <p>Создай игровую комнату для друзей</p>
+
+    <button id="createBtn">
+      Создать комнату
+    </button>
+
+    <section id="roomDetails">
+      <p>Код комнаты</p>
+      <div id="code"></div>
+
+      <div id="qrcode"></div>
+
+      <p>Отсканируйте QR-код телефоном</p>
+      <a id="joinLink" href="#">
+        Ссылка для подключения игроков
+      </a>
+
+      <p>Максимум 20 игроков</p>
+    </section>
+
+    <p id="status" role="status"></p>
+  </main>
+
   <script type="module">
     import { supabase }
       from "./supabase-client.js";
@@ -68,40 +130,93 @@
     const button =
       document.getElementById("createBtn");
 
-    const code =
+    const codeElement =
       document.getElementById("code");
+
+    const details =
+      document.getElementById("roomDetails");
 
     const status =
       document.getElementById("status");
 
     button.addEventListener("click", async () => {
       button.disabled = true;
+      details.style.display = "none";
       status.textContent = "Создаём комнату...";
-      code.textContent = "";
 
       try {
+        if (typeof QRCode === "undefined") {
+          throw new Error(
+            "Не загрузилась библиотека QR-кодов"
+          );
+        }
+
         const { data, error } = await supabase.rpc(
           "create_quiz_room"
         );
 
         if (error) throw error;
-        if (!data || !data.length) {
-          throw new Error("Нет ответа сервера");
+
+        if (!data || data.length === 0) {
+          throw new Error("Сервер не вернул комнату");
         }
 
-        code.textContent = data[0].room_code;
-        status.textContent = "Комната создана!";
+        const room = data[0];
+        const roomCode = room.room_code;
 
-        // Секрет ведущего сохраняем только
-        // в рамках текущей вкладки.
+        if (!/^\d{6}$/.test(roomCode)) {
+          throw new Error("Неверный код комнаты");
+        }
+
+        // Сохраняем секрет ведущего во вкладке.
         sessionStorage.setItem(
           "quizroom_host_secret",
-          data[0].host_secret
+          room.host_secret
         );
+
+        sessionStorage.setItem(
+          "quizroom_room_code",
+          roomCode
+        );
+
+        const joinUrl = new URL(
+          "./join.html",
+          window.location.href
+        );
+
+        joinUrl.searchParams.set(
+          "code",
+          roomCode
+        );
+
+        const qrElement =
+          document.getElementById("qrcode");
+
+        qrElement.innerHTML = "";
+
+        new QRCode(qrElement, {
+          text: joinUrl.toString(),
+          width: 200,
+          height: 200,
+          colorDark: "#000000",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.H
+        });
+
+        codeElement.textContent = roomCode;
+
+        const link =
+          document.getElementById("joinLink");
+
+        link.href = joinUrl.toString();
+
+        details.style.display = "block";
+        status.textContent =
+          "Комната успешно создана!";
+
       } catch (err) {
         status.textContent =
           "Ошибка: " + err.message;
-      } finally {
         button.disabled = false;
       }
     });
