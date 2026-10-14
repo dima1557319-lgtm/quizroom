@@ -1,0 +1,91 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>QuizRoom — Создать комнату</title>
+  <style>
+    body {
+      background: #0b0920;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 60px 20px;
+    }
+    button {
+      background: #8b5cf6;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      padding: 16px 30px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    #code {
+      font-size: 44px;
+      font-weight: bold;
+      letter-spacing: 8px;
+      margin: 30px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>QuizRoom</h1>
+  <p>Создай свою игровую комнату</p>
+
+  <button id="createBtn">
+    Создать комнату
+  </button>
+
+  <div id="code"></div>
+  <p id="status"></p>
+
+  <script type="module">
+    import { supabase }
+      from "./supabase-client.js";
+
+    const button =
+      document.getElementById("createBtn");
+
+    const code =
+      document.getElementById("code");
+
+    const status =
+      document.getElementById("status");
+
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      status.textContent = "Создаём комнату...";
+      code.textContent = "";
+
+      try {
+        const { data, error } = await supabase.rpc(
+          "create_quiz_room"
+        );
+
+        if (error) throw error;
+        if (!data || !data.length) {
+          throw new Error("Нет ответа сервера");
+        }
+
+        code.textContent = data[0].room_code;
+        status.textContent = "Комната создана!";
+
+        // Секрет ведущего сохраняем только
+        // в рамках текущей вкладки.
+        sessionStorage.setItem(
+          "quizroom_host_secret",
+          data[0].host_secret
+        );
+      } catch (err) {
+        status.textContent =
+          "Ошибка: " + err.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
