@@ -150,7 +150,7 @@ begin
  select not exists(select 1 from public.questions where room_id=r.id and question_number=q.question_number+1 and definition->>'round_number'=d->>'round_number') into end_round;
  reveal:=r.status='finished' or (r.game_phase='reveal' and (r.admin_document->>'reveal_timing'='question' or (r.admin_document->>'reveal_timing'='round' and end_round)));
  if p_player is not null then select * into a from public.answers where question_id=q.id and player_id=p_player; end if;
- result:=result||jsonb_build_object('question',(result->'question'-'correct_option')||jsonb_build_object('kind',d->>'kind','options',coalesce(d->'options','[]'),'round',d->>'round','media',d->'media','animation',d->>'animation','round_end',end_round,'revealed',reveal,'correct_choices',case when reveal then d->'answer_key' else null end,'accepted',case when reveal then d->'accepted' else null end,'explanation',case when reveal then d->>'explanation' else null end,'answer_media',case when reveal then d->'answer_media' else null end),'my_response',a.response);
+ result:=result||jsonb_build_object('question',((result->'question')-'correct_option')||jsonb_build_object('kind',d->>'kind','options',coalesce(d->'options','[]'),'round',d->>'round','media',d->'media','animation',d->>'animation','round_end',end_round,'revealed',reveal,'correct_choices',case when reveal then d->'answer_key' else null end,'accepted',case when reveal then d->'accepted' else null end,'explanation',case when reveal then d->>'explanation' else null end,'answer_media',case when reveal then d->'answer_media' else null end),'my_response',a.response);
  if reveal and r.admin_document->>'reveal_timing'<>'question' then
   select jsonb_agg(jsonb_build_object('number',question_number,'text',question_text,'options',definition->'options','correct_choices',definition->'answer_key','accepted',definition->'accepted','explanation',definition->>'explanation','answer_media',definition->'answer_media') order by question_number) into review from public.questions where room_id=r.id and (r.status='finished' or definition->>'round_number'=d->>'round_number');
   result:=result||jsonb_build_object('review',review);
@@ -333,6 +333,12 @@ begin
  insert into public.quiz_admins(user_id) values(uid);
  perform set_config('request.jwt.claim.sub',uid::text,true);
  if not public.is_quiz_admin() then raise exception 'FAIL admin authentication';end if;
+ insert into public.quiz_admin_emails(email_hash) values(encode(extensions.digest('quizroom-rollback-test@example.invalid','sha256'),'hex'));
+ delete from public.quiz_admins where user_id=uid;
+ if not public.is_quiz_admin() then raise exception 'FAIL verified email access';end if;
+ update auth.users set email_confirmed_at=null where id=uid;
+ if public.is_quiz_admin() then raise exception 'FAIL unverified email access';end if;
+ update auth.users set email_confirmed_at=now() where id=uid;
  doc:='{"title":"Rollback test","description":"Private test","category":"Test","price":123.5,"score_timing":"question","reveal_timing":"question","rounds":[{"title":"Round 1","questions":[{"text":"Single","kind":"single","options":["A","B"],"correct":[1],"points":0.5,"duration":300},{"text":"Multiple","kind":"multiple","options":["A","B","C","D","E"],"correct":[0,4],"partial":true,"points":1,"duration":300}]},{"title":"Round 2","questions":[{"text":"Text","kind":"text","accepted":["Ёж  лесной"],"points":1.5,"duration":300},{"text":"Manual","kind":"manual","points":1.5,"duration":300}]}]}'::jsonb;
  foreach timing in array array['question','round','quiz'] loop
   doc:=jsonb_set(jsonb_set(doc,'{score_timing}',to_jsonb(timing)),'{reveal_timing}',to_jsonb(timing));

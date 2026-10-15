@@ -1,11 +1,11 @@
-import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-catalog30';
+import {supabase} from './supabase-client.js';
+import { quizzes as staticQuizzes, quizIds as staticIds } from './quiz-catalog.js?v=20261015-catalog30';
 const $ = id => document.getElementById(id);
 const make = (tag, className, text) => {const node=document.createElement(tag);if(className)node.className=className;if(text!=null)node.textContent=text;return node;};
 const normalize = text => text.toLocaleLowerCase('ru').replaceAll('ё','е');
-const questionCount=quizzes.reduce((sum,q)=>sum+q.questions.length,0);
+let quizzes=[],quizIds=[];
 $('year').textContent=new Date().getFullYear();
-$('catalogCount').textContent=`Квизы: ${quizzes.length} · Вопросы: ${questionCount}`;
-for(const category of [...new Set(quizzes.map(q=>q.category))].sort((a,b)=>a.localeCompare(b,'ru'))){const option=make('option','',category);option.value=category;$('catalogCategory').append(option);}
+$('catalogStatus').textContent='Загружаем каталог…';
 let limit=12;
 function filtered(){
  const words=normalize($('catalogSearch').value.trim()).split(/\s+/).filter(Boolean);
@@ -17,9 +17,10 @@ function renderCatalog(){
   const card=make('article','card');
   const art=make('div','art',q.icon);art.setAttribute('aria-hidden','true');
   const body=make('div','card-body');
-  body.append(make('div','meta',`${q.category.toLocaleUpperCase('ru')} · ${q.level} · ${q.questions.length} вопросов`),make('h3','',q.title),make('p','',q.desc));
-  const bottom=make('div','bottom');const link=make('a','primary small','Играть вместе →');link.href=`./room-test.html?quiz=${quizIds[i]}`;link.setAttribute('aria-label',`Играть вместе: ${q.title}`);bottom.append(make('span','price','Бесплатно'),link);
-  const demo=make('button','secondary small','Одиночное демо');demo.type='button';demo.style.marginTop='12px';demo.setAttribute('aria-label',`Одиночное демо: ${q.title}`);demo.addEventListener('click',()=>openGame(i,demo));body.append(bottom,demo);card.append(art,body);return card;
+  body.append(make('div','meta',`${q.category.toLocaleUpperCase('ru')} · ${q.level} · ${q.question_count||q.questions.length} вопросов`),make('h3','',q.title),make('p','',q.desc));
+  const bottom=make('div','bottom');const link=make('a','primary small','Играть вместе →');link.href=`./room-test.html?quiz=${quizIds[i]}`;link.setAttribute('aria-label',`Играть вместе: ${q.title}`);const price=Number(q.price||0);bottom.append(make('span','price',price?new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:2}).format(price):'Бесплатно'));
+  if(q.available){bottom.append(link);}else{const unavailable=make('button','secondary small','Покупка пока недоступна');unavailable.disabled=true;bottom.append(unavailable);} 
+  const demo=make('button','secondary small','Одиночное демо');demo.type='button';demo.style.marginTop='12px';demo.setAttribute('aria-label',`Одиночное демо: ${q.title}`);demo.addEventListener('click',()=>openGame(i,demo));body.append(bottom);if(!q.managed&&q.questions.length&&q.available)body.append(demo);if(!q.available)body.append(make('p','muted','Продажи ещё не подключены.'));card.append(art,body);return card;
  });
  $('cards').replaceChildren(...cards);
  $('catalogStatus').textContent=matches.length?`Показано ${cards.length} из ${matches.length}`:'Ничего не найдено. Попробуйте другую тему или запрос.';
@@ -31,7 +32,17 @@ for(const id of ['catalogSearch','catalogCategory','catalogLevel'])$(id).addEven
 function resetFilters(){$('catalogSearch').value='';$('catalogCategory').value='';$('catalogLevel').value='';limit=12;renderCatalog();$('catalogSearch').focus();}
 $('resetFilters').addEventListener('click',resetFilters);$('emptyReset').addEventListener('click',resetFilters);
 $('loadMore').addEventListener('click',()=>{limit+=12;renderCatalog();});
-renderCatalog();
+async function loadCatalog(){
+ try{
+  const {data,error}=await supabase.rpc('list_quiz_catalog');if(error)throw error;
+  if(!Array.isArray(data))throw Error('Неверный ответ каталога');
+  quizIds=data.map(q=>q.key);quizzes=data.map(q=>{const index=staticIds.indexOf(q.key);return {...q,desc:q.description,questions:q.managed?[]:staticQuizzes[index]?.questions||[]};});
+  const originalOrder=new Map(staticIds.map((id,i)=>[id,i]));const combined=quizzes.map((q,i)=>({q,id:quizIds[i]})).sort((a,b)=>(originalOrder.get(a.id)??1000)-(originalOrder.get(b.id)??1000));quizzes=combined.map(x=>x.q);quizIds=combined.map(x=>x.id);
+  $('catalogCount').textContent=`Квизы: ${quizzes.length} · Вопросы: ${quizzes.reduce((n,q)=>n+q.question_count,0)}`;
+  for(const category of [...new Set(quizzes.map(q=>q.category))].sort((a,b)=>a.localeCompare(b,'ru'))){const option=make('option','',category);option.value=category;$('catalogCategory').append(option);}renderCatalog();
+ }catch{ $('catalogStatus').textContent='Не удалось загрузить каталог. Обновите страницу, чтобы узнать актуальные цены и доступность.';$('loadMore').hidden=true; }
+}
+void loadCatalog();
 let active=0,index=0,score=0,answered=false,returnFocus;
 function openGame(i,trigger){active=i;index=0;score=0;returnFocus=trigger;$('overlay').classList.add('open');document.body.style.overflow='hidden';renderQuestion();$('overlay').querySelector('.close').focus();}
 function closeGame(){$('overlay').classList.remove('open');document.body.style.overflow='';if(returnFocus?.isConnected)returnFocus.focus();}

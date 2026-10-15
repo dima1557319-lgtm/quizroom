@@ -1,7 +1,7 @@
 import { supabase } from './supabase-client.js';
-import { renderHostGame } from './host-game.js?v=20261015-scoring';
+import { renderHostGame } from './host-game.js?v=studio1';
 
-import { formatPoints } from './game-view.js?v=20261015-scoring';
+import { formatPoints } from './game-view.js?v=studio1';
 const byId = (id) => document.getElementById(id);
 let channel, timer, busy = false, stopped = false, subscribed = false;
 let roomCode, hostSecret;

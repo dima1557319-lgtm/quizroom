@@ -131,7 +131,10 @@
     import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-catalog30';
     const selectedQuiz = new URLSearchParams(location.search).get('quiz');
     const selectedIndex = quizIds.indexOf(selectedQuiz);
-    if(selectedQuiz === 'custom') document.getElementById('quizSelection').textContent='Свой квиз · вопросы и баллы настраиваются перед началом';
+    let serverQuiz = null;
+    if(selectedQuiz === 'custom'){document.getElementById('createBtn').disabled=true;document.getElementById('quizSelection').textContent='Редактор доступен только администратору.';}
+    if(selectedQuiz && selectedQuiz !== 'custom'){supabase.rpc('list_quiz_catalog').then(({data,error})=>{if(error){document.getElementById('createBtn').disabled=true;document.getElementById('quizSelection').textContent='Не удалось загрузить квиз. Обновите страницу.';return;}serverQuiz=data.find(q=>q.key===selectedQuiz);if(!serverQuiz||!serverQuiz.available){document.getElementById('createBtn').disabled=true;document.getElementById('quizSelection').textContent='Квиз недоступен для запуска. Продажи платных квизов пока не подключены.';}else document.getElementById('quizSelection').textContent=`Квиз «${serverQuiz.title}» · Вопросов: ${serverQuiz.question_count}`;});}
+    
     if (selectedIndex >= 0) {
       document.getElementById('quizSelection').textContent = `Квиз «${quizzes[selectedIndex].title}» · Вопросов: ${quizzes[selectedIndex].questions.length}`;
     }
@@ -161,7 +164,7 @@
         }
 
         const { data, error } = await supabase.rpc(
-          "create_quiz_room_v2", {p_quiz_key: selectedQuiz === 'custom' ? 'custom' : selectedIndex >= 0 ? selectedQuiz : 'starter'}
+          "create_quiz_room_v2", {p_quiz_key: selectedQuiz || 'starter'}
         );
 
         if (error) throw error;

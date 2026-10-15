@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { renderGame, renderRanking } from './game-view.js?v=20261015-scoring';
+import { renderGame, renderRanking } from './game-view.js?v=studio1';
 const el=id=>document.getElementById(id);
 let id,secret;
 try{id=sessionStorage.getItem('quizroom_player_id');secret=sessionStorage.getItem('quizroom_player_secret');}catch{}
@@ -7,12 +7,13 @@ let channel,timer,busy=false,again=false,stopped=false,sending=false,connected=f
 function stop(){stopped=true;clearInterval(timer);if(channel)void supabase.removeChannel(channel);}
 async function answer(question,option){
  if(sending||stopped)return;sending=true;el('error').textContent='';
- for(const b of document.querySelectorAll('[data-answer]')){b.dataset.sending='true';b.disabled=true;}
+ for(const b of document.querySelectorAll('[data-answer],[data-rich-answer]')){b.dataset.sending='true';b.disabled=true;}
  try{
-  const {error}=await supabase.rpc('submit_quiz_answer',{p_player_id:id,p_player_secret:secret,p_question_id:question,p_option:option});
+  const modern=typeof option==='object';
+  const {error}=await supabase.rpc(modern?'submit_quiz_response':'submit_quiz_answer',modern?{p_player_id:id,p_player_secret:secret,p_question_id:question,p_response:option}:{p_player_id:id,p_player_secret:secret,p_question_id:question,p_option:option});
   if(error)throw error;
  }catch(e){el('error').textContent=e.message||'Не удалось отправить ответ. Попробуйте ещё раз.';}
- finally{sending=false;for(const b of document.querySelectorAll('[data-answer]'))b.dataset.sending='false';void refresh();}
+ finally{sending=false;for(const b of document.querySelectorAll('[data-answer],[data-rich-answer]'))b.dataset.sending='false';void refresh();}
 }
 async function refresh(){
  if(stopped||!id||!secret)return;if(busy){again=true;return;}busy=true;

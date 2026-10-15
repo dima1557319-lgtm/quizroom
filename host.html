@@ -9,6 +9,7 @@
 *{box-sizing:border-box}body{margin:0;background:#0b0920;color:#fff;font:18px Arial,sans-serif;padding:24px}main{max-width:680px;margin:32px auto;padding:28px;background:#17132f;border:1px solid #39305f;border-radius:24px}h1,a{color:#a78bfa}#code{letter-spacing:6px;font-size:32px}li{padding:12px;overflow-wrap:anywhere;border-bottom:1px solid #39305f}button{padding:12px;border:0;border-radius:10px;background:#a78bfa;color:#0b0920;cursor:pointer}p{line-height:1.5}progress{width:100%;accent-color:#a78bfa}a{overflow-wrap:anywhere}[hidden]{display:none!important}
 </style>
 <link rel="stylesheet" href="./theme.css?v=20261015-blue-purple">
+<link rel="stylesheet" href="./rich-game.css?v=studio1">
 <main>
 <h1>Комната ведущего</h1>
 <p id="status" role="status">Проверяем доступ…</p>
@@ -18,15 +19,15 @@
 <section id="setup">
 <h2 id="quizTitle">Подготовка игры</h2>
 <p id="setupHelp">Настройте баллы для каждого вопроса.</p>
-<label>Когда начислять баллы<select id="scoringMode"><option value="reveal">После каждого вопроса</option><option value="finish">Только в конце квиза</option></select></label>
+
 <div id="questionEditor"></div>
-<button id="addQuestion" type="button">Добавить вопрос</button>
+
 <button id="startGame" type="button">Начать игру</button>
 </section>
 <section id="game" hidden>
 <h2 id="roundTitle"></h2><p id="gameTimer" role="timer"></p>
 <h3 id="questionText"></h3><div id="options"></div>
-<p id="answerStatus" role="status"></p>
+<p id="answerStatus" role="status"></p><section id="hostGrading"></section>
 <button id="revealAnswer" type="button">Показать правильный ответ</button>
 <button id="nextQuestion" type="button">Следующий вопрос</button>
 <button id="finishGame" type="button">Завершить игру</button>
@@ -45,5 +46,5 @@
 <style>
 input,textarea,select{display:block;width:100%;margin:8px 0;padding:12px;background:#0b0920;color:white;border:1px solid #655780;border-radius:8px;font:inherit}textarea{min-height:80px}fieldset{border:1px solid #655780;border-radius:12px;margin:16px 0;padding:16px}button{margin:5px 0}button:disabled{opacity:.5;cursor:default}.option{padding:14px;border:1px solid #655780;border-radius:10px;margin:8px 0;overflow-wrap:anywhere}.correct{border:2px solid #60d4a3;background:#15392e}.selected{outline:2px solid #a78bfa}#startGame{background:#60d4a3;width:100%;font-weight:bold}#gameTimer{font-size:26px}#questionText{overflow-wrap:anywhere}#gameError{color:#ffb7bb}
 </style>
-<script type="module" src="./host.js?v=20261015-scoring"></script>
+<script type="module" src="./host.js?v=studio1"></script>
 </html>

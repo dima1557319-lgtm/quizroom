@@ -10,6 +10,12 @@ begin
  insert into public.quiz_admins(user_id) values(uid);
  perform set_config('request.jwt.claim.sub',uid::text,true);
  if not public.is_quiz_admin() then raise exception 'FAIL admin authentication';end if;
+ insert into public.quiz_admin_emails(email_hash) values(encode(extensions.digest('quizroom-rollback-test@example.invalid','sha256'),'hex'));
+ delete from public.quiz_admins where user_id=uid;
+ if not public.is_quiz_admin() then raise exception 'FAIL verified email access';end if;
+ update auth.users set email_confirmed_at=null where id=uid;
+ if public.is_quiz_admin() then raise exception 'FAIL unverified email access';end if;
+ update auth.users set email_confirmed_at=now() where id=uid;
  doc:='{"title":"Rollback test","description":"Private test","category":"Test","price":123.5,"score_timing":"question","reveal_timing":"question","rounds":[{"title":"Round 1","questions":[{"text":"Single","kind":"single","options":["A","B"],"correct":[1],"points":0.5,"duration":300},{"text":"Multiple","kind":"multiple","options":["A","B","C","D","E"],"correct":[0,4],"partial":true,"points":1,"duration":300}]},{"title":"Round 2","questions":[{"text":"Text","kind":"text","accepted":["Ёж  лесной"],"points":1.5,"duration":300},{"text":"Manual","kind":"manual","points":1.5,"duration":300}]}]}'::jsonb;
  foreach timing in array array['question','round','quiz'] loop
   doc:=jsonb_set(jsonb_set(doc,'{score_timing}',to_jsonb(timing)),'{reveal_timing}',to_jsonb(timing));
