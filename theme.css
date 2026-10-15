@@ -1,0 +1,32 @@
+/* Shared appearance only: gameplay and session credentials are unaffected. */
+:root {color-scheme:dark}
+.theme-switcher{display:flex;justify-content:flex-end;margin:0 0 22px;font:14px Arial,sans-serif;letter-spacing:normal;text-align:left}
+.theme-switcher label{display:flex;align-items:center;gap:10px;color:#d8cbf6}
+.theme-switcher select{display:inline-block;width:auto;max-width:190px;margin:0;padding:10px 30px 10px 12px;background:#211935;color:#f6f5ff;border:1px solid #655780;border-radius:10px;font:inherit;cursor:pointer}
+.theme-switcher select:focus-visible{outline:3px solid #a78bfa;outline-offset:3px}
+header:has(.theme-switcher){flex-wrap:wrap;gap:14px}
+header .theme-switcher{margin:0}
+html[data-theme="light"]{color-scheme:light;background:#f6f4fc;color:#211735}
+html[data-theme="light"] body{background:radial-gradient(ellipse at 80% 0%,#e7dcff 0%,transparent 42%),#f6f4fc;color:#211735}
+html[data-theme="light"] main:not(:has(.hero)),html[data-theme="light"] .card{background:#fff;color:#211735;border-color:#d4c9e5;box-shadow:0 8px 30px #583a7e0b}
+html[data-theme="light"] h1,html[data-theme="light"] a:not(.primary):not(.secondary),html[data-theme="light"] .logo span{color:#6233b6}
+html[data-theme="light"] p,html[data-theme="light"] .muted,html[data-theme="light"] .hero p,html[data-theme="light"] .card p{color:#5d526d}
+html[data-theme="light"] .eyebrow,html[data-theme="light"] .meta,html[data-theme="light"] .price{color:#693ab1}
+html[data-theme="light"] .gradient{background-image:linear-gradient(90deg,#7433cd,#086d86)}
+html[data-theme="light"] .pill,html[data-theme="light"] .secondary,html[data-theme="light"] .notice,html[data-theme="light"] .theme-switcher select{background:#f0eafb;color:#49315f;border-color:#c5b3dd}
+html[data-theme="light"] .theme-switcher label{color:#49315f}
+html[data-theme="light"] .notice strong{color:#211735}
+html[data-theme="light"] .art{background:radial-gradient(circle at center,#c9afe855,transparent 68%),linear-gradient(125deg,#f0e5ff,#e4f0ff)}
+html[data-theme="light"] .modal{background:#fff;color:#211735;border-color:#c5b3dd;box-shadow:0 30px 100px #21173555}
+html[data-theme="light"] .close{color:#49315f;border-color:#c5b3dd}
+html[data-theme="light"] input,html[data-theme="light"] textarea,html[data-theme="light"] select{background:#fcfaff;color:#211735;border-color:#a38ebd}
+html[data-theme="light"] input::placeholder,html[data-theme="light"] textarea::placeholder{color:#746484;opacity:1}
+html[data-theme="light"] fieldset,html[data-theme="light"] li{border-color:#d4c9e5}
+html[data-theme="light"] .option,html[data-theme="light"] .answer{background:#f4effb;color:#211735;border-color:#ac95c9}
+html[data-theme="light"] .correct,html[data-theme="light"] .answer.correct{background:#d9f6e9;color:#144d36;border-color:#25845b}
+html[data-theme="light"] .answer.wrong{background:#ffe3e8;color:#802239;border-color:#b93a56}
+html[data-theme="light"] .selected{outline-color:#7433cd}
+html[data-theme="light"] .progress{background:#e5dcf2}
+html[data-theme="light"] #error,html[data-theme="light"] #gameError{color:#a51b3c}
+html[data-theme="light"] footer{color:#6c5f7c;border-color:#d4c9e5}
+@media(max-width:480px){header .theme-switcher{width:100%}.theme-switcher select{max-width:180px}.theme-switcher{font-size:13px}}
