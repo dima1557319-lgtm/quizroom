@@ -1,6 +1,7 @@
 import { supabase } from './supabase-client.js';
-import { renderHostGame } from './host-game.js?v=20261015-15';
+import { renderHostGame } from './host-game.js?v=20261015-scoring';
 
+import { formatPoints } from './game-view.js?v=20261015-scoring';
 const byId = (id) => document.getElementById(id);
 let channel, timer, busy = false, stopped = false, subscribed = false;
 let roomCode, hostSecret;
@@ -35,7 +36,7 @@ async function refresh() {
     }
     const nodes = data.players.map(player => {
       const item = document.createElement('li');
-      item.textContent = `${player.player_name} — ${player.score} очков`;
+      item.textContent = `${player.player_name} — баллы: ${formatPoints(player.score)}`;
       return item;
     });
     byId('players').replaceChildren(...nodes);
@@ -73,7 +74,7 @@ function stop() {
 
 try {
   roomCode = sessionStorage.getItem('quizroom_room_code');
-  hostSecret = sessionStorage.getItem('quizroom_host_secret');
+  hostSecret = sessionStorage.getItem('quizroom_role') === 'player' || sessionStorage.getItem('quizroom_player_secret') ? null : sessionStorage.getItem('quizroom_host_secret');
 } catch { /* Storage can be unavailable in restrictive browsers. */ }
 if (!/^\d{6}$/.test(roomCode || '') || !hostSecret || hostSecret === 'undefined') {
   deny();

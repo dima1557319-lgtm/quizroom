@@ -1,3 +1,4 @@
+export const formatPoints = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2}).format(Number(value));
 const el = id => document.getElementById(id);
 let state, offset = 0, renderKey;
 export function remaining() {
@@ -11,10 +12,10 @@ export function renderGame(data, onAnswer) {
   const finished = data.status === 'finished';
   el('game').hidden = data.status === 'waiting';
   if (data.status === 'waiting') return;
-  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions}`;
+  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions} · Баллы за ответ: ${formatPoints(q?.points ?? 1000)}`;
   el('questionText').textContent = finished ? 'Спасибо за игру!' : q?.text || '';
   el('answerStatus').textContent = finished ? 'Места в таблице определяются по очкам. При равенстве очков — ничья.' :
-    data.phase === 'reveal' ? `Правильный ответ: ${q.options[q.correct_option]}` :
+    data.phase === 'reveal' ? `Правильный ответ: ${q.options[q.correct_option]}${data.scoring_mode === 'finish' ? ' · Баллы появятся в конце квиза.' : ''}` :
     data.my_answer != null ? 'Ответ принят. Ожидаем остальных игроков.' : `Ответили: ${data.answer_count} из ${data.players.length}`;
   const key = JSON.stringify([q?.id, data.phase, data.my_answer, !!onAnswer, finished]);
   if (key !== renderKey) {
@@ -52,7 +53,7 @@ export function renderRanking(players, target) {
     if (p.score !== lastScore) rank = i + 1;
     lastScore = p.score;
     const li = document.createElement('li');
-    li.textContent = `${rank}. ${p.player_name} — ${p.score} очков`;
+    li.textContent = `${rank}. ${p.player_name} — баллы: ${formatPoints(p.score)}`;
     return li;
   }));
 }
