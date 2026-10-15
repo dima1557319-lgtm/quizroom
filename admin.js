@@ -62,6 +62,8 @@ function open(record){
  current=record;doc=structuredClone(record?.draft||blank());dirty=false;generation++;
  for(const [id,key]of [['quizTitle','title'],['quizCategory','category'],['quizIcon','icon'],['quizLevel','level'],['quizDescription','description'],['quizPrice','price'],['scoreTiming','score_timing'],['revealTiming','reveal_timing']])$(id).value=doc[key]??'';
  $('editor').hidden=false;$('saveState').textContent=record?`Черновик: версия ${record.revision}${record.published_revision?' · опубликована версия '+record.published_revision:''}`:'Новый квиз ещё не сохранён';renderRounds();
+ $('editor').scrollIntoView({block:'start',behavior:'instant'});
+ $('quizTitle').focus({preventScroll:true});
 }
 async function rpc(name,args){const {data,error}=await api.rpc(name,args);if(error)throw error;return data;}
 async function list(){records=await rpc('admin_list_quizzes');$('quizList').replaceChildren();for(const r of records){button(`${r.draft.title||'Без названия'} · ${r.published_revision?'опубликован':'черновик'}`,()=>open(r),$('quizList'));}}
