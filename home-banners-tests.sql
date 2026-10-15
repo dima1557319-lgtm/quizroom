@@ -1,0 +1,30 @@
+begin;
+do $$
+declare uid uuid:=gen_random_uuid();a jsonb;b jsonb;d jsonb;pub jsonb;i int;before_count int;
+begin
+ if has_table_privilege('anon','public.home_banners','SELECT') or has_function_privilege('anon','public.admin_save_home_banner(uuid,jsonb,integer)','EXECUTE') then raise exception 'FAIL public write/private table';end if;
+ begin perform public.admin_list_home_banners();raise exception 'FAIL anonymous admin';exception when insufficient_privilege then null;end;
+ insert into auth.users(id,email,email_confirmed_at) values(uid,'home-banner-rollback@example.invalid',now());insert into public.quiz_admins(user_id) values(uid);perform set_config('request.jwt.claim.sub',uid::text,true);
+ d:='{"title":"Private banner draft","text":"Initial text","kind":"announcement","position":100,"image_url":"","image_alt":"","link_url":"https://example.invalid/quiz","link_label":"Подробнее"}';
+ a:=public.admin_save_home_banner(null,d,0);
+ if exists(select 1 from jsonb_array_elements(public.list_home_banners()) v where v->>'id'=a->>'id') then raise exception 'FAIL draft leaked';end if;
+ begin perform public.admin_save_home_banner((a->>'id')::uuid,d,0);raise exception 'FAIL stale revision';exception when serialization_failure then null;end;
+ perform public.admin_publish_home_banner((a->>'id')::uuid,1);
+ a:=public.admin_save_home_banner((a->>'id')::uuid,jsonb_set(d,'{text}','"Changed private text"'),1);
+ select value into pub from jsonb_array_elements(public.list_home_banners()) where value->>'id'=a->>'id';
+ if pub->>'text'<>'Initial text' or pub ? 'draft' or pub ? 'revision' then raise exception 'FAIL published isolation';end if;
+ perform public.admin_publish_home_banner((a->>'id')::uuid,2);
+ select value into pub from jsonb_array_elements(public.list_home_banners()) where value->>'id'=a->>'id';if pub->>'text'<>'Changed private text' then raise exception 'FAIL republish';end if;
+ b:=public.admin_save_home_banner(null,jsonb_set(d,'{position}','0'),0);perform public.admin_publish_home_banner((b->>'id')::uuid,1);
+ if (select ord from jsonb_array_elements(public.list_home_banners()) with ordinality x(v,ord) where v->>'id'=b->>'id')>=(select ord from jsonb_array_elements(public.list_home_banners()) with ordinality x(v,ord) where v->>'id'=a->>'id') then raise exception 'FAIL banner order';end if;
+ b:=public.admin_save_home_banner((b->>'id')::uuid,jsonb_set(d,'{link_url}','"javascript:alert(1)"'),1);
+ begin perform public.admin_publish_home_banner((b->>'id')::uuid,2);raise exception 'FAIL unsafe link';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+ perform public.admin_hide_home_banner((a->>'id')::uuid,2);
+ if exists(select 1 from jsonb_array_elements(public.list_home_banners()) v where v->>'id'=a->>'id') or not exists(select 1 from public.home_banners where id=(a->>'id')::uuid) then raise exception 'FAIL hide preserves draft';end if;
+ select count(*) into before_count from public.home_banners where published is not null;
+ for i in 1..(12-before_count) loop a:=public.admin_save_home_banner(null,d,0);perform public.admin_publish_home_banner((a->>'id')::uuid,1);end loop;
+ a:=public.admin_save_home_banner(null,d,0);
+ begin perform public.admin_publish_home_banner((a->>'id')::uuid,1);raise exception 'FAIL published limit';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+end $$;
+rollback;
+select 'PASS: private drafts, admin access, revisions, publishing, order, safe links, hiding, banner limit' as result;
