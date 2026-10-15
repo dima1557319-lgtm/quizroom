@@ -66,15 +66,19 @@ function open(record){
  $('quizTitle').focus({preventScroll:true});
 }
 async function rpc(name,args){const {data,error}=await api.rpc(name,args);if(error)throw error;return data;}
-async function list(){records=await rpc('admin_list_quizzes');$('quizList').replaceChildren();for(const r of records){button(`${r.draft.title||'Без названия'} · ${r.published_revision?'опубликован':'черновик'}`,()=>open(r),$('quizList'));}}
+async function list(){
+ records=await rpc('admin_list_quizzes');$('quizList').replaceChildren();
+ for(const r of records){const row=node('article');row.className='quiz-list-item';row.append(node('strong',r.draft.title||'Без названия'),node('small',r.published_revision?'В каталоге':'Черновик'));
+ const edit=button('Редактировать',()=>{if(!busy)open(r);},row);edit.setAttribute('aria-label',`Редактировать «${r.draft.title||'Без названия'}»`);$('quizList').append(row);}
+}
 async function save(){
  const version=generation;const saved=await rpc('admin_save_quiz',{p_id:current?.id||null,p_document:documentValue(),p_revision:current?.revision||0});current=saved;
  if(generation===version){doc=structuredClone(saved.draft);dirty=false;$('saveState').textContent=`Черновик сохранён · версия ${saved.revision}`;}else $('saveState').textContent='Есть новые несохранённые изменения';await list();return saved;
 }
-async function action(fn){if(busy)return;busy=true;for(const id of ['saveQuiz','publishQuiz','unpublishQuiz','launchQuiz','newQuiz','reloadQuizzes'])$(id).disabled=true;status('');try{await fn();}catch(e){status(e.message||'Не удалось выполнить действие');}finally{busy=false;for(const id of ['saveQuiz','publishQuiz','unpublishQuiz','launchQuiz','newQuiz','reloadQuizzes'])$(id).disabled=false;}}
+async function action(fn){if(busy)return;busy=true;for(const id of ['saveQuiz','publishQuiz','unpublishQuiz','deleteQuiz','launchQuiz','newQuiz','reloadQuizzes'])$(id).disabled=true;status('');try{await fn();}catch(e){status(e.message||'Не удалось выполнить действие');}finally{busy=false;for(const id of ['saveQuiz','publishQuiz','unpublishQuiz','deleteQuiz','launchQuiz','newQuiz','reloadQuizzes'])$(id).disabled=false;}}
 $('newQuiz').addEventListener('click',()=>open(null));$('reloadQuizzes').addEventListener('click',()=>action(list));$('saveQuiz').addEventListener('click',()=>action(async()=>{await save();status('Черновик сохранён.');}));
 $('publishQuiz').addEventListener('click',()=>action(async()=>{const saved=await save();if(dirty)throw Error('Сохраните новые изменения перед публикацией.');await rpc('admin_publish_quiz',{p_id:saved.id,p_revision:saved.revision});current.published_revision=current.revision;await list();status('Квиз опубликован. Цена и правила обновлены в каталоге.');}));
-$('unpublishQuiz').addEventListener('click',()=>action(async()=>{if(!current)return;await rpc('admin_unpublish_quiz',{p_id:current.id});await list();current.published_revision=null;status('Квиз снят с публикации. Черновик сохранён.');}));
+$('unpublishQuiz').addEventListener('click',()=>action(async()=>{if(!current)return;await rpc('admin_unpublish_quiz',{p_id:current.id});await list();current.published_revision=null;status('Квиз убран из каталога. Он сохранён в разделе «Мои квизы», и его можно опубликовать снова.');}));
 $('launchQuiz').addEventListener('click',()=>action(async()=>{if(!current?.published_revision||current.published_revision!==current.revision||dirty)throw Error('Сначала сохраните и опубликуйте квиз.');const data=await rpc('create_quiz_room_v2',{p_quiz_key:current.template_key});const r=data[0];sessionStorage.setItem('quizroom_room_code',r.room_code);sessionStorage.setItem('quizroom_host_secret',r.host_secret);sessionStorage.setItem('quizroom_role','host');for(const key of ['quizroom_player_id','quizroom_player_secret','quizroom_player_room'])sessionStorage.removeItem(key);location.assign('./host.html');}));
 $('addRound').addEventListener('click',()=>{if(doc.rounds.length<20){doc.rounds.push({title:`Тур ${doc.rounds.length+1}`,questions:[blankQuestion()]});changed();renderRounds();}});
 for(const id of ['quizTitle','quizCategory','quizIcon','quizLevel','quizDescription','quizPrice','scoreTiming','revealTiming'])$(id).addEventListener('input',changed);
@@ -111,3 +115,14 @@ $('coverFile').addEventListener('change',async()=>{
  doc.cover={type:'image',url:data.publicUrl,alt:$('coverAlt').value.trim()};changed();renderCover();status('Обложка загружена. Сохраните черновик и опубликуйте квиз, чтобы обновить каталог.');
  }catch(e){status(e.message||'Не удалось загрузить обложку');}finally{$('coverFile').disabled=false;}
 });
+
+$('deleteQuiz').addEventListener('click',()=>action(async()=>{
+ if(!current){status('Этот квиз ещё не сохранён. Полное удаление доступно для сохранённых квизов.');return;}
+ const item=current;
+ const dialog=$('deleteConfirm');dialog.returnValue='';
+ $('deleteConfirmText').textContent=`Полностью удалить квиз «${item.draft.title||'Без названия'}»? Он исчезнет из каталога и раздела «Мои квизы». Черновик и неопубликованные изменения будут потеряны. Восстановить квиз через сайт нельзя.`;
+ const confirmation=new Promise(resolve=>dialog.addEventListener('close',()=>resolve(dialog.returnValue==='delete'),{once:true}));dialog.showModal();
+ if(!await confirmation)return;
+ await rpc('admin_delete_quiz',{p_id:item.id,p_revision:item.revision});
+ current=null;doc=null;dirty=false;generation++;$('editor').hidden=true;await list();status('Квиз полностью удалён.');
+}));

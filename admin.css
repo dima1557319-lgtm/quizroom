@@ -5,3 +5,5 @@
 @media(max-width:850px){.studio-layout>#editor{order:-1}#quizList{max-height:320px}}
 
 #coverPreview img{width:min(100%,640px);aspect-ratio:16/9;object-fit:cover;max-height:none}
+
+.quiz-list-item{padding:12px 0;border-bottom:1px solid #655780}.quiz-list-item strong{display:block;overflow-wrap:anywhere}.danger{background:#b4233a;color:#fff;border:1px solid #fb7185}html[data-theme=light] .danger{background:#a71932;color:#fff}

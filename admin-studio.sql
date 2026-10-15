@@ -324,4 +324,18 @@ revoke all on function public.control_quiz_game_v2(text,uuid,text,jsonb,uuid,tex
 revoke all on function public.admin_list_quizzes(),public.admin_save_quiz(uuid,jsonb,integer),public.admin_publish_quiz(uuid,integer),public.admin_unpublish_quiz(uuid),public.list_quiz_catalog(),public.submit_quiz_response(uuid,uuid,uuid,jsonb),public.grade_quiz_response(text,uuid,uuid,numeric) from public;
 grant execute on function public.admin_list_quizzes(),public.admin_save_quiz(uuid,jsonb,integer),public.admin_publish_quiz(uuid,integer),public.admin_unpublish_quiz(uuid) to authenticated;
 grant execute on function public.list_quiz_catalog(),public.submit_quiz_response(uuid,uuid,uuid,jsonb),public.grade_quiz_response(text,uuid,uuid,numeric),public.create_quiz_room_v2(text),public.control_quiz_game_v2(text,uuid,text,jsonb,uuid,text),public.submit_quiz_answer(uuid,uuid,uuid,integer) to anon,authenticated;
+create or replace function public.admin_delete_quiz(p_id uuid,p_revision integer) returns void
+language plpgsql security definer set search_path='' as $$
+declare item public.admin_quizzes%rowtype;
+begin
+ if not public.is_quiz_admin() then raise exception 'Доступ только администратору' using errcode='42501'; end if;
+ select * into item from public.admin_quizzes where id=p_id for update;
+ if not found then raise exception 'Квиз уже удалён. Обновите список'; end if;
+ if item.revision is distinct from p_revision then raise exception 'Квиз изменён в другой вкладке. Обновите список и проверьте его перед удалением' using errcode='40001'; end if;
+ -- Existing rooms retain their copied questions and answers. Shared media are retained.
+ delete from public.quiz_templates where key=item.template_key;
+ delete from public.admin_quizzes where id=item.id;
+end $$;
+revoke all on function public.admin_delete_quiz(uuid,integer) from public,anon,authenticated;
+grant execute on function public.admin_delete_quiz(uuid,integer) to authenticated;
 commit;
