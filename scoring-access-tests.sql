@@ -30,7 +30,7 @@ begin
    perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,1);
    s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'reveal',null,qid,mode);
    expected:=expected+(opts->i->>'points')::numeric;
-   if (s->'players'->0->>'score')::numeric<>case when mode='reveal' then expected else 0 end then raise exception 'FAIL: incorrect score timing'; end if;
+   if (s->'players'->0->>'score')::numeric<>(case when mode='reveal' then expected else 0 end) then raise exception 'FAIL: incorrect score timing'; end if;
    s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'reveal',null,qid,mode);
    s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'next',null,qid,mode);
   end loop;
