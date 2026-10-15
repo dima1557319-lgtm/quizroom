@@ -1,4 +1,5 @@
-import {renderRichGame} from './rich-game.js?v=studio1';
+import {renderGameSummary} from './game-summary.js?v=play2';
+import {renderRichGame} from './rich-game.js?v=play2';
 export const formatPoints = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2}).format(Number(value));
 const el = id => document.getElementById(id);
 let state, offset = 0, renderKey;
@@ -8,13 +9,14 @@ export function remaining() {
 }
 export function renderGame(data, onAnswer) {
   state = data;
+  renderGameSummary(data);
   offset = Date.parse(data.server_now) - Date.now();
   const q = data.question;
   const finished = data.status === 'finished';
   el('game').hidden = data.status === 'waiting';
   if (data.status === 'waiting') return;
   if(q?.kind){renderRichGame(data,onAnswer);tick();return;}
-  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions} · Баллы за ответ: ${formatPoints(q?.points ?? 1000)}`;
+  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions} · Баллы за ответ: ${formatPoints(q?.points ?? 1)}`;
   el('questionText').textContent = finished ? 'Спасибо за игру!' : q?.text || '';
   el('answerStatus').textContent = finished ? 'Места в таблице определяются по очкам. При равенстве очков — ничья.' :
     data.phase === 'reveal' ? `Правильный ответ: ${q.options[q.correct_option]}${data.scoring_mode === 'finish' ? ' · Баллы появятся в конце квиза.' : ''}` :

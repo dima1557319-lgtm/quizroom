@@ -1,0 +1,30 @@
+begin;
+do $$
+declare c record;p record;s jsonb;r jsonb;qid uuid;i int;blocked boolean;before_result jsonb;
+begin
+ perform set_config('request.jwt.claim.sub','',true);
+ if has_function_privilege('anon','public.quiz_result_report(uuid)','EXECUTE') or has_function_privilege('anon','public.control_quiz_game_content(text,uuid,text,jsonb,uuid,text)','EXECUTE') or has_function_privilege('anon','public.join_quiz_room_content(text,text)','EXECUTE') then raise exception 'FAIL private helpers';end if;
+ select * into c from public.create_quiz_room_v2('starter');
+ begin perform public.control_quiz_game_v2(c.room_code,c.host_secret,'start',null,null,'reveal');raise exception 'FAIL empty start';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+ for i in 1..20 loop select * into p from public.join_quiz_room(c.room_code,'Проверка '||i);end loop;
+ begin perform public.join_quiz_room(c.room_code,'21-й');raise exception 'FAIL capacity';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+ if (select count(*) from public.players pl join public.rooms ro on ro.id=pl.room_id where ro.code=c.room_code)<>20 then raise exception 'FAIL room size';end if;
+ begin perform public.get_quiz_game_host(c.room_code,p.player_secret);raise exception 'FAIL player host access';exception when insufficient_privilege then null;end;
+ s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'start',null,null,'reveal');qid:=(s->'question'->>'id')::uuid;
+ if s->'results'<>'null'::jsonb then raise exception 'FAIL early results';end if;
+ begin perform public.join_quiz_room(c.room_code,'После старта');raise exception 'FAIL late join';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+ update public.rooms set question_started_at=clock_timestamp()-interval '400 seconds' where code=c.room_code;
+ begin perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,2);raise exception 'FAIL expired answer';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
+ update public.rooms set question_started_at=clock_timestamp() where code=c.room_code;
+ perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,2);perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,1);
+ if (select count(*) from public.answers where player_id=p.player_id and question_id=qid)<>1 then raise exception 'FAIL duplicate answer';end if;
+ s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'reveal',null,qid,'reveal');s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'next',null,qid,'reveal');
+ s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'next',null,qid,'reveal');if (s->'question'->>'number')::int<>2 then raise exception 'FAIL double next';end if;
+ qid:=(s->'question'->>'id')::uuid;s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'finish',null,qid,'reveal');
+ if s->>'status'<>'finished' or s->'results'->>'finish_reason'<>'ended_by_host' or jsonb_array_length(s->'results'->'players')<>20 or (s->'results'->'players'->0->>'score')::numeric<>1 then raise exception 'FAIL results';end if;
+ r:=public.get_quiz_game_player(p.player_id,p.player_secret);if r->'results' is distinct from s->'results' then raise exception 'FAIL result recovery';end if;
+ if (s->'results')::text like '%secret%' or (s->'results')::text like '%token%' then raise exception 'FAIL credentials in result';end if;
+ before_result:=s->'results';s:=public.control_quiz_game_v2(c.room_code,c.host_secret,'finish',null,qid,'reveal');if s->'results' is distinct from before_result then raise exception 'FAIL result mutated';end if;
+end $$;
+rollback;
+select 'PASS: capacity 20, late joins, deadlines, role isolation, retries, stale actions, stable results and recovery' as result;

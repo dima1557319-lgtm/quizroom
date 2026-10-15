@@ -1,23 +1,25 @@
+import {gameRpc} from './game-rpc.js?v=play2';
+import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js';
-import { renderHostGame } from './host-game.js?v=studio1';
+import { renderHostGame } from './host-game.js?v=play2';
 
-import { formatPoints } from './game-view.js?v=studio1';
+import { formatPoints } from './game-view.js?v=play2';
 const byId = (id) => document.getElementById(id);
-let channel, timer, busy = false, stopped = false, subscribed = false;
+let channel, timer, busy = false, again = false, stopped = false, subscribed = false;
 let roomCode, hostSecret;
 const deny = () => {
   byId('lobby').hidden = true;
   byId('players').replaceChildren();
-  byId('status').textContent = 'Нет доступа к комнате. Откройте экран в той вкладке, где создавали комнату.';
+  byId('status').textContent = 'Нет доступа к комнате. Откройте исходную вкладку или восстановите доступ из сохранённого файла.';
 };
 
 // Contract is documented in README. Never subscribe to publicly readable player rows.
 async function refresh() {
-  if (busy || stopped) return;
+  if(stopped)return;if(busy){again=true;return;}
   busy = true;
   byId('refresh').disabled = true;
   try {
-    const { data, error } = await supabase.rpc('get_quiz_game_host', {
+    const { data, error } = await gameRpc('get_quiz_game_host', {
       p_code: roomCode, p_host_secret: hostSecret
     });
     if (error) {
@@ -46,14 +48,14 @@ async function refresh() {
     byId('lobby').hidden = false;
     byId('status').textContent = nodes.length === 20 ? 'Комната заполнена' : 'Комната готова к подключению';
     renderHostGame(data, refresh);
-    byId('connection').textContent = subscribed ? 'Обновление в реальном времени подключено' : 'Резервное обновление каждые 5 секунд';
+    byId('connection').textContent = subscribed ? 'Обновление в реальном времени подключено' : 'Резервное обновление каждые 2 секунды';
     if (!channel && typeof data.realtime_topic === 'string' && data.realtime_topic.length >= 32) {
       // Random capability topic carries invalidation only, never names or tokens.
       channel = supabase.channel(data.realtime_topic, { config: { private: false } })
         .on('broadcast', { event: 'lobby_changed' }, () => { void refresh(); })
         .subscribe(state => {
           subscribed = state === 'SUBSCRIBED';
-          byId('connection').textContent = subscribed ? 'Обновление в реальном времени подключено' : 'Связь восстанавливается; резервное обновление каждые 5 секунд';
+          byId('connection').textContent = subscribed ? 'Обновление в реальном времени подключено' : 'Связь восстанавливается; резервное обновление каждые 2 секунды';
           if (subscribed) queueMicrotask(() => { void refresh(); });
         });
     }
@@ -62,7 +64,7 @@ async function refresh() {
     byId('connection').textContent = 'Список может быть устаревшим';
   } finally {
     busy = false;
-    byId('refresh').disabled = false;
+    byId('refresh').disabled = false;if(again){again=false;queueMicrotask(()=>{void refresh();});}
   }
 }
 
@@ -87,8 +89,12 @@ if (!/^\d{6}$/.test(roomCode || '') || !hostSecret || hostSecret === 'undefined'
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) void refresh();
   });
-  timer = setInterval(() => { if (!document.hidden) void refresh(); }, 5000);
+  timer = setInterval(() => { if (!document.hidden) void refresh(); }, 2000);
   void refresh();
 }
 window.addEventListener('pagehide', stop);
 window.addEventListener('pageshow', event => { if (event.persisted) location.reload(); });
+
+installAccessBackup('host');
+window.addEventListener('online',()=>{void refresh();});
+window.addEventListener('offline',()=>{document.getElementById('connection').textContent='Нет сети. После восстановления соединения игра обновится автоматически.';});
