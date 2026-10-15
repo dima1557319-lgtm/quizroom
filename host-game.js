@@ -1,6 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { renderGame } from './game-view.js';
-import { quizzes, quizIds } from './quiz-catalog.js';
+import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-15';
 const el = id => document.getElementById(id);
 const starter = [
   {text:'Какая планета самая большая в Солнечной системе?',options:['Земля','Марс','Юпитер','Венера'],correct:2,duration:30},

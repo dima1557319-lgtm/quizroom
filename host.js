@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { renderHostGame } from './host-game.js';
+import { renderHostGame } from './host-game.js?v=20261015-15';
 
 const byId = (id) => document.getElementById(id);
 let channel, timer, busy = false, stopped = false, subscribed = false;

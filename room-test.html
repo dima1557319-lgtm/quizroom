@@ -128,7 +128,7 @@
   <script type="module">
     import { supabase }
       from "./supabase-client.js";
-    import { quizzes, quizIds } from './quiz-catalog.js';
+    import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-15';
     const selectedQuiz = new URLSearchParams(location.search).get('quiz');
     const selectedIndex = quizIds.indexOf(selectedQuiz);
     if (selectedIndex >= 0) {
