@@ -32,8 +32,8 @@ html[data-theme="light"] footer{color:#6c5f7c;border-color:#d4c9e5}
 @media(max-width:480px){header .theme-switcher{width:100%}.theme-switcher select{max-width:180px}.theme-switcher{font-size:13px}}
 
 /* Accent palettes keep readable button labels in both themes. */
-html[data-accent]{--accent:#7c3aed;--accent-ink:#fff;--accent-dark-text:#c4b5fd;--accent-light-text:#6d28d9;--accent-text:var(--accent-dark-text);--accent-soft:color-mix(in srgb,var(--accent) 16%,#17132f);--accent-border:color-mix(in srgb,var(--accent) 55%,#8b849b)}
-html[data-accent="blue"]{--accent:#2563eb;--accent-dark-text:#93c5fd;--accent-light-text:#1d4ed8}
+html[data-accent]{--accent:#9333c8;--accent-ink:#fff;--accent-dark-text:#d8a3ff;--accent-light-text:#7b1fa2;--accent-text:var(--accent-dark-text);--accent-soft:color-mix(in srgb,var(--accent) 16%,#17132f);--accent-border:color-mix(in srgb,var(--accent) 55%,#8b849b)}
+html[data-accent="blue"]{--accent:#006fc9;--accent-dark-text:#76d4ff;--accent-light-text:#005a9e;--accent-soft:color-mix(in srgb,var(--accent) 18%,#10263b)}
 html[data-accent="green"]{--accent:#15803d;--accent-dark-text:#86efac;--accent-light-text:#166534}
 html[data-accent="yellow"]{--accent:#facc15;--accent-ink:#322400;--accent-dark-text:#fde047;--accent-light-text:#795100}
 html[data-accent="orange"]{--accent:#c2410c;--accent-dark-text:#fdba74;--accent-light-text:#9a3412}
@@ -53,3 +53,13 @@ html[data-accent] .bar{background:var(--accent)}
 html[data-accent] progress{accent-color:var(--accent)}
 html[data-accent] .selected{outline-color:var(--accent-text)}
 html[data-accent] :is(a,button,input,select,textarea):focus-visible{outline:3px solid var(--accent-text);outline-offset:3px}
+
+/* Blue uses blue surfaces as well as blue buttons, without a violet base. */
+html[data-accent="blue"][data-theme="dark"] body{background:radial-gradient(ellipse at 80% 0%,#006fc944 0%,transparent 42%),#071524}
+html[data-accent="blue"][data-theme="dark"] :is(main:not(:has(.hero)),.card,.modal,.notice){background:#10263b;border-color:#355b79}
+html[data-accent="blue"][data-theme="dark"] :is(input,textarea,select){background:#071524;border-color:#527b9a}
+html[data-accent="blue"][data-theme="dark"] :is(.answer,.option):not(.correct):not(.wrong){background:#142e46;border-color:#527b9a}
+html[data-accent="blue"][data-theme="dark"] fieldset{border-color:#527b9a}
+html[data-accent="blue"][data-theme="light"] body{background:radial-gradient(ellipse at 80% 0%,#ccecff 0%,transparent 42%),#f0f7fc}
+html[data-accent="blue"][data-theme="light"] :is(input,textarea,select){background:#f7fbff;border-color:#8aafca}
+html[data-accent="blue"][data-theme="light"] :is(.answer,.option):not(.correct):not(.wrong){background:#eef7ff;border-color:#8aafca}
