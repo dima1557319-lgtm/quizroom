@@ -1,5 +1,6 @@
 import { supabase } from './supabase-client.js';
 import { renderGame } from './game-view.js';
+import { quizzes, quizIds } from './quiz-catalog.js';
 const el = id => document.getElementById(id);
 const starter = [
   {text:'Какая планета самая большая в Солнечной системе?',options:['Земля','Марс','Юпитер','Венера'],correct:2,duration:30},
@@ -28,6 +29,14 @@ function questions() {
 }
 function saveDraft(){try{sessionStorage.setItem(draftKey,JSON.stringify(questions()));}catch{/* Draft stays usable in memory. */}}
 let initial=starter;
+try {
+  const selection = sessionStorage.getItem(`quizroom_quiz_${sessionStorage.getItem('quizroom_room_code')}`);
+  const chosen = quizzes[quizIds.indexOf(selection)];
+  if (chosen) {
+    initial = chosen.questions.map(q => ({text:q.q,options:[...q.a],correct:q.correct,duration:30}));
+    el('quizTitle').textContent = `Квиз «${chosen.title}»`;
+  }
+} catch {}
 try { const saved=JSON.parse(sessionStorage.getItem(draftKey)); if(Array.isArray(saved)&&saved.length&&saved.every(q=>typeof q.text==='string'&&Array.isArray(q.options)&&q.options.length===4)) initial=saved; }catch{}
 initial.forEach(questionCard);
 el('questionEditor').addEventListener('input',saveDraft);
