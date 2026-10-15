@@ -160,6 +160,7 @@
       if (sessionStorage.getItem('quizroom_player_id') &&
           sessionStorage.getItem('quizroom_player_secret') &&
           (!qrCode || qrCode === sessionStorage.getItem('quizroom_player_room'))) {
+        sessionStorage.removeItem('quizroom_host_secret');sessionStorage.removeItem('quizroom_room_code');sessionStorage.setItem('quizroom_role','player');
         window.location.replace('./player.html');
       }
     } catch { /* The normal join form remains available. */ }
@@ -202,6 +203,7 @@
         }
 
         const player = data[0];
+        sessionStorage.removeItem('quizroom_host_secret');sessionStorage.removeItem('quizroom_room_code');sessionStorage.setItem('quizroom_role','player');
 
         sessionStorage.setItem(
           "quizroom_player_id",

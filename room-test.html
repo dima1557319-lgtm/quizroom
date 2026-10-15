@@ -131,6 +131,7 @@
     import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-15';
     const selectedQuiz = new URLSearchParams(location.search).get('quiz');
     const selectedIndex = quizIds.indexOf(selectedQuiz);
+    if(selectedQuiz === 'custom') document.getElementById('quizSelection').textContent='Свой квиз · вопросы и баллы настраиваются перед началом';
     if (selectedIndex >= 0) {
       document.getElementById('quizSelection').textContent = `Квиз «${quizzes[selectedIndex].title}» · Вопросов: ${quizzes[selectedIndex].questions.length}`;
     }
@@ -160,7 +161,7 @@
         }
 
         const { data, error } = await supabase.rpc(
-          "create_quiz_room"
+          "create_quiz_room_v2", {p_quiz_key: selectedQuiz === 'custom' ? 'custom' : selectedIndex >= 0 ? selectedQuiz : 'starter'}
         );
 
         if (error) throw error;
@@ -176,7 +177,9 @@
           throw new Error("Неверный код комнаты");
         }
 
-        // Сохраняем секрет ведущего во вкладке.
+        // Each tab has one active role.
+        for (const key of ['quizroom_player_id','quizroom_player_secret','quizroom_player_room']) sessionStorage.removeItem(key);
+        sessionStorage.setItem('quizroom_role','host');
         sessionStorage.setItem(
           "quizroom_host_secret",
           room.host_secret

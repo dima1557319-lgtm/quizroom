@@ -1,5 +1,5 @@
 import { supabase } from './supabase-client.js';
-import { renderGame, renderRanking } from './game-view.js';
+import { renderGame, renderRanking } from './game-view.js?v=20261015-scoring';
 const el=id=>document.getElementById(id);
 let id,secret;
 try{id=sessionStorage.getItem('quizroom_player_id');secret=sessionStorage.getItem('quizroom_player_secret');}catch{}
@@ -30,7 +30,7 @@ async function refresh(){
   else{el('connection').textContent='Нет связи. Данные могут быть устаревшими; восстанавливаем подключение…';}
  }finally{busy=false;if(again){again=false;void refresh();}}
 }
-if(id&&secret){timer=setInterval(()=>{if(!document.hidden)void refresh();},2000);void refresh();}
+if(id&&secret){sessionStorage.removeItem('quizroom_host_secret');sessionStorage.removeItem('quizroom_room_code');sessionStorage.setItem('quizroom_role','player');timer=setInterval(()=>{if(!document.hidden)void refresh();},2000);void refresh();}
 else el('status').textContent='Сначала войдите в комнату по QR-коду или ссылке.';
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)void refresh();});
 window.addEventListener('pagehide',stop);
