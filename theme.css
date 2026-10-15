@@ -30,3 +30,26 @@ html[data-theme="light"] .progress{background:#e5dcf2}
 html[data-theme="light"] #error,html[data-theme="light"] #gameError{color:#a51b3c}
 html[data-theme="light"] footer{color:#6c5f7c;border-color:#d4c9e5}
 @media(max-width:480px){header .theme-switcher{width:100%}.theme-switcher select{max-width:180px}.theme-switcher{font-size:13px}}
+
+/* Accent palettes keep readable button labels in both themes. */
+html[data-accent]{--accent:#7c3aed;--accent-ink:#fff;--accent-dark-text:#c4b5fd;--accent-light-text:#6d28d9;--accent-text:var(--accent-dark-text);--accent-soft:color-mix(in srgb,var(--accent) 16%,#17132f);--accent-border:color-mix(in srgb,var(--accent) 55%,#8b849b)}
+html[data-accent="blue"]{--accent:#2563eb;--accent-dark-text:#93c5fd;--accent-light-text:#1d4ed8}
+html[data-accent="green"]{--accent:#15803d;--accent-dark-text:#86efac;--accent-light-text:#166534}
+html[data-accent="yellow"]{--accent:#facc15;--accent-ink:#322400;--accent-dark-text:#fde047;--accent-light-text:#795100}
+html[data-accent="orange"]{--accent:#c2410c;--accent-dark-text:#fdba74;--accent-light-text:#9a3412}
+html[data-accent="red"]{--accent:#dc2626;--accent-dark-text:#fca5a5;--accent-light-text:#b91c1c}
+html[data-theme="light"][data-accent]{--accent-text:var(--accent-light-text);--accent-soft:color-mix(in srgb,var(--accent) 9%,white);--accent-border:color-mix(in srgb,var(--accent) 50%,#bfb7cd)}
+.theme-switcher{flex-wrap:wrap;gap:10px 18px}
+html[data-accent] body{background:radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--accent) 24%,transparent) 0%,transparent 42%),#0b0920}
+html[data-theme="light"][data-accent] body{background:radial-gradient(ellipse at 80% 0%,color-mix(in srgb,var(--accent) 12%,transparent) 0%,transparent 42%),#f6f4fc}
+html[data-accent] .primary,html[data-accent] button:not(.answer):not(.option):not(.secondary):not(.close){background:var(--accent);color:var(--accent-ink);box-shadow:none}
+html[data-accent] h1,html[data-accent] a:not(.primary):not(.secondary),html[data-accent] .logo span,html[data-accent] .eyebrow,html[data-accent] .meta,html[data-accent] .price{color:var(--accent-text)}
+html[data-accent] .gradient{background-image:linear-gradient(90deg,var(--accent-text),color-mix(in srgb,var(--accent-text) 75%,#77d9f0))}
+html[data-accent] .secondary,html[data-accent] .pill,html[data-accent] .theme-switcher select{background:var(--accent-soft);color:var(--accent-text);border-color:var(--accent-border)}
+html[data-accent] .theme-switcher label{color:var(--accent-text)}
+html[data-accent] .art{background:radial-gradient(circle at center,var(--accent-soft),transparent 68%),var(--accent-soft)}
+html[data-accent] .card:hover,html[data-accent] .answer:hover:not(:disabled){border-color:var(--accent-text)}
+html[data-accent] .bar{background:var(--accent)}
+html[data-accent] progress{accent-color:var(--accent)}
+html[data-accent] .selected{outline-color:var(--accent-text)}
+html[data-accent] :is(a,button,input,select,textarea):focus-visible{outline:3px solid var(--accent-text);outline-offset:3px}
