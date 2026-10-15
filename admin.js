@@ -1,3 +1,4 @@
+import './admin-banners.js?v=digest1';
 import {adminClient as api} from './admin-client.js?v=studio1';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const $=id=>document.getElementById(id);

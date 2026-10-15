@@ -14,7 +14,7 @@ function filtered(){
 function renderCatalog(){
  const matches=filtered();
  const cards=matches.slice(0,limit).map(({q,i})=>{
-  const card=make('article','card');
+  const card=make('article','card');card.id=`quiz-${quizIds[i]}`;
   const art=make('div','art',q.icon);art.setAttribute('aria-hidden','true');
   if(q.cover?.type==='image'&&typeof q.cover.url==='string'){try{const url=new URL(q.cover.url);if(url.protocol==='https:'){const img=make('img','quiz-cover');img.src=url.href;img.alt=q.cover.alt||'';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{art.textContent=q.icon||'🧩';},{once:true});art.replaceChildren(img);}}catch{}}
   const body=make('div','card-body');
@@ -43,7 +43,8 @@ async function loadCatalog(){
   for(const category of [...new Set(quizzes.map(q=>q.category))].sort((a,b)=>a.localeCompare(b,'ru'))){const option=make('option','',category);option.value=category;$('catalogCategory').append(option);}renderCatalog();
  }catch{ $('catalogStatus').textContent='Не удалось загрузить каталог. Обновите страницу, чтобы узнать актуальные цены и доступность.';$('loadMore').hidden=true; }
 }
-void loadCatalog();
+window.addEventListener('hashchange',()=>{const key=location.hash.slice(1);if(key.startsWith('quiz-')){limit=Math.max(12,quizzes.length);renderCatalog();document.getElementById(key)?.scrollIntoView({block:'center'});}});
+void loadCatalog().then(()=>{if(location.hash.startsWith('#quiz-')&&quizzes.length){limit=Math.max(12,quizzes.length);renderCatalog();document.getElementById(location.hash.slice(1))?.scrollIntoView({block:'center'});}});
 let active=0,index=0,score=0,answered=false,returnFocus;
 function openGame(i,trigger){active=i;index=0;score=0;returnFocus=trigger;$('overlay').classList.add('open');document.body.style.overflow='hidden';renderQuestion();$('overlay').querySelector('.close').focus();}
 function closeGame(){$('overlay').classList.remove('open');document.body.style.overflow='';if(returnFocus?.isConnected)returnFocus.focus();}
