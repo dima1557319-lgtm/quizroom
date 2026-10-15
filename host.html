@@ -13,6 +13,22 @@
 <section id="lobby" hidden>
 <p>Код комнаты: <strong id="code"></strong></p>
 <a id="join">Ссылка для игроков</a>
+<section id="setup">
+<h2>Подготовка игры</h2>
+<p>Измените готовые вопросы или добавьте свои. За правильный ответ — 1000 очков.</p>
+<div id="questionEditor"></div>
+<button id="addQuestion" type="button">Добавить вопрос</button>
+<button id="startGame" type="button">Начать игру</button>
+</section>
+<section id="game" hidden>
+<h2 id="roundTitle"></h2><p id="gameTimer" role="timer"></p>
+<h3 id="questionText"></h3><div id="options"></div>
+<p id="answerStatus" role="status"></p>
+<button id="revealAnswer" type="button">Показать правильный ответ</button>
+<button id="nextQuestion" type="button">Следующий вопрос</button>
+<button id="finishGame" type="button">Завершить игру</button>
+</section>
+<p id="gameError" role="alert"></p>
 <h2 id="count" aria-live="polite">Игроки</h2>
 <progress id="capacity" max="20" value="0" aria-label="Количество игроков из 20"></progress>
 <p id="empty" hidden>Ждём первого игрока</p>
@@ -22,5 +38,8 @@
 </section>
 <p><a href="./room-test.html">Создание комнаты и QR-код</a></p>
 </main>
+<style>
+input,textarea,select{display:block;width:100%;margin:8px 0;padding:12px;background:#0b0920;color:white;border:1px solid #655780;border-radius:8px;font:inherit}textarea{min-height:80px}fieldset{border:1px solid #655780;border-radius:12px;margin:16px 0;padding:16px}button{margin:5px 0}button:disabled{opacity:.5;cursor:default}.option{padding:14px;border:1px solid #655780;border-radius:10px;margin:8px 0;overflow-wrap:anywhere}.correct{border:2px solid #60d4a3;background:#15392e}.selected{outline:2px solid #a78bfa}#startGame{background:#60d4a3;width:100%;font-weight:bold}#gameTimer{font-size:26px}#questionText{overflow-wrap:anywhere}#gameError{color:#ffb7bb}
+</style>
 <script type="module" src="./host.js"></script>
 </html>

@@ -154,6 +154,15 @@
       codeInput.value = qrCode;
     }
 
+    // Reloading the join link in this tab resumes the existing player.
+    try {
+      if (sessionStorage.getItem('quizroom_player_id') &&
+          sessionStorage.getItem('quizroom_player_secret') &&
+          (!qrCode || qrCode === sessionStorage.getItem('quizroom_player_room'))) {
+        window.location.replace('./player.html');
+      }
+    } catch { /* The normal join form remains available. */ }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
 
@@ -226,6 +235,7 @@
 
         status.textContent =
           "Подключение успешно!";
+        window.location.assign('./player.html');
 
       } catch (err) {
         status.textContent =

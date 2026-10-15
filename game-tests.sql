@@ -1,0 +1,54 @@
+-- Run in SQL Editor. All test rooms, questions, players and answers are rolled back.
+begin;
+do $$
+declare r record; p record; p2 record; s jsonb; qid uuid; old_qid uuid; denied boolean; accepted jsonb;
+ quiz jsonb:='[{"text":"Тест 1","options":["A","B","C","D"],"correct":2,"duration":30},{"text":"Тест 2","options":["A","B","C","D"],"correct":1,"duration":30}]';
+begin
+ select * into r from public.create_quiz_room();
+ denied:=false;
+ begin perform public.control_quiz_game(r.room_code,r.host_secret,'start',quiz,null); exception when others then if SQLERRM='Дождитесь хотя бы одного игрока' then denied:=true;else raise;end if;end;
+ if not denied then raise exception 'Start without players accepted';end if;
+ select * into p from public.join_quiz_room(r.room_code,'QA first');
+ select * into p2 from public.join_quiz_room(r.room_code,'QA second');
+ denied:=false;
+ begin perform public.control_quiz_game(r.room_code,gen_random_uuid(),'start',quiz,null);exception when insufficient_privilege then denied:=true;end;
+ if not denied then raise exception 'Host authentication failed';end if;
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'start',quiz,null);
+ qid:=(s->'question'->>'id')::uuid;
+ if s->>'phase'<>'question' then raise exception 'Start failed';end if;
+ s:=public.get_quiz_game_player(p.player_id,p.player_secret);
+ if s->'question'->>'correct_option' is not null then raise exception 'Answer leaked';end if;
+ if s::text like '%player_token%' or s::text like '%host_token%' then raise exception 'Token leaked';end if;
+ denied:=false;
+ begin perform public.get_quiz_game_player(p.player_id,p2.player_secret);exception when insufficient_privilege then denied:=true;end;
+ if not denied then raise exception 'Player authentication failed';end if;
+ perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,0);
+ accepted:=public.submit_quiz_answer(p.player_id,p.player_secret,qid,2);
+ if (accepted->>'selected_option')::integer<>0 then raise exception 'Duplicate answer changed';end if;
+ perform public.submit_quiz_answer(p2.player_id,p2.player_secret,qid,2);
+ s:=public.get_quiz_game_player(p2.player_id,p2.player_secret);
+ if (select score from public.players where id=p2.player_id)<>0 then raise exception 'Score revealed early';end if;
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'reveal',null,qid);
+ if (s->'question'->>'correct_option')::integer<>2 then raise exception 'Reveal failed';end if;
+ if (select score from public.players where id=p.player_id)<>0 or (select score from public.players where id=p2.player_id)<>1000 then raise exception 'Scoring failed';end if;
+ perform public.control_quiz_game(r.room_code,r.host_secret,'reveal',null,qid);
+ if (select score from public.players where id=p2.player_id)<>1000 then raise exception 'Repeated reveal doubled points';end if;
+ old_qid:=qid;
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'next',null,old_qid);
+ qid:=(s->'question'->>'id')::uuid;
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'next',null,old_qid);
+ if s->'question'->>'id'<>qid::text then raise exception 'Duplicate next advanced twice';end if;
+ denied:=false;
+ begin perform public.submit_quiz_answer(p.player_id,p.player_secret,old_qid,0);exception when others then raise;end;
+ -- Retrying an existing answer is safe even after advancing.
+ update public.rooms set question_started_at=clock_timestamp()-interval '1 day' where code=r.room_code;
+ begin perform public.submit_quiz_answer(p.player_id,p.player_secret,qid,1);exception when others then if SQLERRM='Время вышло' then denied:=true;else raise;end if;end;
+ if not denied then raise exception 'Late answer accepted';end if;
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'reveal',null,qid);
+ s:=public.control_quiz_game(r.room_code,r.host_secret,'next',null,qid);
+ if s->>'status'<>'finished' then raise exception 'Game did not finish';end if;
+ if (select count(*) from public.answers a join public.questions q on q.id=a.question_id where q.room_id=(select id from public.rooms where code=r.room_code))<>2 then raise exception 'Answer count failed';end if;
+ if has_function_privilege('anon','public.quiz_game_snapshot(uuid,uuid)','execute') then raise exception 'Internal projection exposed';end if;
+end $$;
+rollback;
+select 'PASS: authentication, hidden key, start, answers, retry safety, score, reveal, next, deadline, finish; test data rolled back' as verification;
