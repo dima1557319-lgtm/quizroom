@@ -1,0 +1,238 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1">
+  <title>QuizRoom — Вход в игру</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #0b0920;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      display: grid;
+      place-items: center;
+      padding: 20px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: #17132f;
+      border: 1px solid #39305f;
+      border-radius: 24px;
+      padding: 30px 24px;
+      text-align: center;
+      box-shadow: 0 0 40px #8b5cf622;
+    }
+
+    h1 {
+      color: #a78bfa;
+      font-size: 38px;
+      margin: 0 0 12px;
+    }
+
+    p { color: #b8b4d2; }
+
+    input {
+      width: 100%;
+      padding: 15px;
+      margin: 8px 0;
+      border-radius: 12px;
+      border: 1px solid #514575;
+      background: #0b0920;
+      color: white;
+      font-size: 18px;
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      margin-top: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(
+        135deg, #8b5cf6, #6366f1
+      );
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:disabled { opacity: 0.5; }
+
+    #success { display: none; }
+
+    .code {
+      font-size: 34px;
+      font-weight: bold;
+      letter-spacing: 5px;
+    }
+
+    #status {
+      font-size: 14px;
+      margin-top: 15px;
+    }
+  </style>
+</head>
+
+<body>
+  <main class="card">
+    <h1>QuizRoom</h1>
+
+    <div id="joinForm">
+      <p>Присоединиться к игре</p>
+
+      <form id="form">
+        <input
+          id="roomCode"
+          type="text"
+          inputmode="numeric"
+          pattern="[0-9]{6}"
+          maxlength="6"
+          placeholder="Код комнаты (6 цифр)"
+          required
+        >
+
+        <input
+          id="playerName"
+          type="text"
+          maxlength="30"
+          placeholder="Твоё имя"
+          required
+        >
+
+        <button id="joinBtn" type="submit">
+          Присоединиться
+        </button>
+      </form>
+    </div>
+
+    <div id="success">
+      <h2>Ты в игре!</h2>
+      <p>Комната:</p>
+      <div class="code" id="displayCode"></div>
+      <p id="welcome"></p>
+      <p>Ожидаем начала игры...</p>
+    </div>
+
+    <p id="status" role="status"></p>
+  </main>
+
+  <script type="module">
+    import { supabase }
+      from "./supabase-client.js";
+
+    const params =
+      new URLSearchParams(window.location.search);
+
+    const codeInput =
+      document.getElementById("roomCode");
+
+    const nameInput =
+      document.getElementById("playerName");
+
+    const form =
+      document.getElementById("form");
+
+    const button =
+      document.getElementById("joinBtn");
+
+    const status =
+      document.getElementById("status");
+
+    const qrCode = params.get("code");
+
+    if (qrCode && /^\d{6}$/.test(qrCode)) {
+      codeInput.value = qrCode;
+    }
+
+    form.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const roomCode = codeInput.value.trim();
+      const playerName = nameInput.value.trim();
+
+      if (!/^\d{6}$/.test(roomCode)) {
+        status.textContent =
+          "Введите код из шести цифр";
+        return;
+      }
+
+      if (!playerName) {
+        status.textContent = "Введите имя";
+        return;
+      }
+
+      button.disabled = true;
+      status.textContent = "Подключаемся...";
+
+      try {
+        const { data, error } = await supabase.rpc(
+          "join_quiz_room",
+          {
+            p_code: roomCode,
+            p_name: playerName
+          }
+        );
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          throw new Error(
+            "Сервер не подтвердил подключение"
+          );
+        }
+
+        const player = data[0];
+
+        sessionStorage.setItem(
+          "quizroom_player_id",
+          player.player_id
+        );
+
+        sessionStorage.setItem(
+          "quizroom_player_secret",
+          player.player_secret
+        );
+
+        sessionStorage.setItem(
+          "quizroom_player_room",
+          roomCode
+        );
+
+        document.getElementById(
+          "joinForm"
+        ).style.display = "none";
+
+        document.getElementById(
+          "success"
+        ).style.display = "block";
+
+        document.getElementById(
+          "displayCode"
+        ).textContent = roomCode;
+
+        document.getElementById(
+          "welcome"
+        ).textContent = "Игрок: " + player.player_name;
+
+        status.textContent =
+          "Подключение успешно!";
+
+      } catch (err) {
+        status.textContent =
+          "Ошибка: " + err.message;
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
