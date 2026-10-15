@@ -100,7 +100,7 @@
 <body>
   <main class="card">
     <h1>QuizRoom</h1>
-    <p>Создай игровую комнату для друзей</p>
+    <p id="quizSelection">Создай игровую комнату для друзей</p>
 
     <button id="createBtn">
       Создать комнату
@@ -122,11 +122,18 @@
     </section>
 
     <p id="status" role="status"></p>
+    <p><a href="./index.html">← На главную QuizRoom</a></p>
   </main>
 
   <script type="module">
     import { supabase }
       from "./supabase-client.js";
+    import { quizzes, quizIds } from './quiz-catalog.js';
+    const selectedQuiz = new URLSearchParams(location.search).get('quiz');
+    const selectedIndex = quizIds.indexOf(selectedQuiz);
+    if (selectedIndex >= 0) {
+      document.getElementById('quizSelection').textContent = `Квиз «${quizzes[selectedIndex].title}» · ${quizzes[selectedIndex].questions.length} вопроса`;
+    }
 
     const button =
       document.getElementById("createBtn");
@@ -179,6 +186,9 @@
           "quizroom_room_code",
           roomCode
         );
+        if (selectedIndex >= 0) {
+          sessionStorage.setItem(`quizroom_quiz_${roomCode}`, selectedQuiz);
+        }
 
         const joinUrl = new URL(
           "./join.html",
