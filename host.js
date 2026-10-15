@@ -36,7 +36,7 @@ async function refresh() {
     }
     const nodes = data.players.map(player => {
       const item = document.createElement('li');
-      item.textContent = `${player.player_name} — ${formatPoints(player.score)} балла`;
+      item.textContent = `${player.player_name} — баллы: ${formatPoints(player.score)}`;
       return item;
     });
     byId('players').replaceChildren(...nodes);

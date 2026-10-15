@@ -12,7 +12,7 @@ export function renderGame(data, onAnswer) {
   const finished = data.status === 'finished';
   el('game').hidden = data.status === 'waiting';
   if (data.status === 'waiting') return;
-  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions} · За ответ: ${formatPoints(q?.points ?? 1000)} балла`;
+  el('roundTitle').textContent = finished ? 'Игра завершена — итоговые результаты' : `Вопрос ${q?.number || 0} из ${data.total_questions} · Баллы за ответ: ${formatPoints(q?.points ?? 1000)}`;
   el('questionText').textContent = finished ? 'Спасибо за игру!' : q?.text || '';
   el('answerStatus').textContent = finished ? 'Места в таблице определяются по очкам. При равенстве очков — ничья.' :
     data.phase === 'reveal' ? `Правильный ответ: ${q.options[q.correct_option]}${data.scoring_mode === 'finish' ? ' · Баллы появятся в конце квиза.' : ''}` :
@@ -53,7 +53,7 @@ export function renderRanking(players, target) {
     if (p.score !== lastScore) rank = i + 1;
     lastScore = p.score;
     const li = document.createElement('li');
-    li.textContent = `${rank}. ${p.player_name} — ${formatPoints(p.score)} балла`;
+    li.textContent = `${rank}. ${p.player_name} — баллы: ${formatPoints(p.score)}`;
     return li;
   }));
 }
