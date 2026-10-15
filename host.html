@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ru">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>QuizRoom — Ведущий</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#0b0920;color:#fff;font:18px Arial,sans-serif;padding:24px}main{max-width:680px;margin:32px auto;padding:28px;background:#17132f;border:1px solid #39305f;border-radius:24px}h1,a{color:#a78bfa}#code{letter-spacing:6px;font-size:32px}li{padding:12px;overflow-wrap:anywhere;border-bottom:1px solid #39305f}button{padding:12px;border:0;border-radius:10px;background:#a78bfa;color:#0b0920;cursor:pointer}p{line-height:1.5}progress{width:100%;accent-color:#a78bfa}a{overflow-wrap:anywhere}[hidden]{display:none!important}
+</style>
+<main>
+<h1>Комната ведущего</h1>
+<p id="status" role="status">Проверяем доступ…</p>
+<section id="lobby" hidden>
+<p>Код комнаты: <strong id="code"></strong></p>
+<a id="join">Ссылка для игроков</a>
+<h2 id="count" aria-live="polite">Игроки</h2>
+<progress id="capacity" max="20" value="0" aria-label="Количество игроков из 20"></progress>
+<p id="empty" hidden>Ждём первого игрока</p>
+<ol id="players"></ol>
+<p id="connection" role="status"></p>
+<button id="refresh" type="button">Обновить список</button>
+</section>
+<p><a href="./room-test.html">Создание комнаты и QR-код</a></p>
+</main>
+<script type="module" src="./host.js"></script>
+</html>
