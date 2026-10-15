@@ -132,7 +132,7 @@
     const selectedQuiz = new URLSearchParams(location.search).get('quiz');
     const selectedIndex = quizIds.indexOf(selectedQuiz);
     if (selectedIndex >= 0) {
-      document.getElementById('quizSelection').textContent = `Квиз «${quizzes[selectedIndex].title}» · ${quizzes[selectedIndex].questions.length} вопроса`;
+      document.getElementById('quizSelection').textContent = `Квиз «${quizzes[selectedIndex].title}» · Вопросов: ${quizzes[selectedIndex].questions.length}`;
     }
 
     const button =
