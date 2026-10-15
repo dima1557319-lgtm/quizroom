@@ -61,7 +61,7 @@ function open(record){
  if(dirty&&!confirm('Открыть другой квиз без сохранения изменений?'))return;
  current=record;doc=structuredClone(record?.draft||blank());dirty=false;generation++;
  for(const [id,key]of [['quizTitle','title'],['quizCategory','category'],['quizIcon','icon'],['quizLevel','level'],['quizDescription','description'],['quizPrice','price'],['scoreTiming','score_timing'],['revealTiming','reveal_timing']])$(id).value=doc[key]??'';
- $('editor').hidden=false;$('saveState').textContent=record?`Черновик: версия ${record.revision}${record.published_revision?' · опубликована версия '+record.published_revision:''}`:'Новый квиз ещё не сохранён';renderRounds();
+ $('editor').hidden=false;$('saveState').textContent=record?`Черновик: версия ${record.revision}${record.published_revision?' · опубликована версия '+record.published_revision:''}`:'Новый квиз ещё не сохранён';renderRounds();renderCover();
  $('editor').scrollIntoView({block:'start',behavior:'instant'});
  $('quizTitle').focus({preventScroll:true});
 }
@@ -79,7 +79,7 @@ $('launchQuiz').addEventListener('click',()=>action(async()=>{if(!current?.publi
 $('addRound').addEventListener('click',()=>{if(doc.rounds.length<20){doc.rounds.push({title:`Тур ${doc.rounds.length+1}`,questions:[blankQuestion()]});changed();renderRounds();}});
 for(const id of ['quizTitle','quizCategory','quizIcon','quizLevel','quizDescription','quizPrice','scoreTiming','revealTiming'])$(id).addEventListener('input',changed);
 $('previewQuiz').addEventListener('click',()=>{
- const data=documentValue();$('previewTitle').textContent=data.title;$('previewContent').replaceChildren();
+ const data=documentValue();$('previewTitle').textContent=data.title;$('previewContent').replaceChildren();const cover=node('div');renderMedia(data.cover,cover);$('previewContent').append(cover);
  for(const round of data.rounds){$('previewContent').append(node('h3',round.title));for(const q of round.questions){const c=node('section');c.className='preview-question';c.append(node('h4',q.text),node('p',`Баллы: ${q.points} · Время: ${q.duration} сек.`));const media=node('div');renderMedia(q.media,media);c.append(media);if(['single','multiple'].includes(q.kind)){const ol=node('ol');q.options.forEach((o,i)=>ol.append(node('li',`${o}${q.correct?.includes(i)?' ✓':''}`)));c.append(ol);}else c.append(node('p',q.kind==='manual'?'Проверяет ведущий':`Допустимые ответы: ${(q.accepted||[]).join('; ')}`));c.append(node('p',q.explanation));const answer=node('div');renderMedia(q.answer_media,answer);c.append(answer);$('previewContent').append(c);}}
  $('preview').showModal();
 });
@@ -90,3 +90,24 @@ window.addEventListener('beforeunload',e=>{if(dirty){e.preventDefault();e.return
 session().catch(e=>status(e.message));
 
 $('registerAdmin').addEventListener('click',()=>action(async()=>{if(!$('loginForm').reportValidity())return;const {error}=await api.auth.signUp({email:$('adminEmail').value.trim(),password:$('adminPassword').value,options:{emailRedirectTo:new URL('./admin.html',location.href).href}});$('adminPassword').value='';if(error)throw error;status('Подтвердите email по письму, затем вернитесь сюда и войдите. Доступ получат только разрешённые адреса.');}));
+
+function renderCover(){
+ $('coverUrl').value=doc.cover?.url||'';$('coverAlt').value=doc.cover?.alt||'';$('coverFile').value='';
+ renderMedia(doc.cover,$('coverPreview'));
+}
+for(const id of ['coverUrl','coverAlt'])$(id).addEventListener('input',()=>{
+ doc.cover=$('coverUrl').value.trim()?{type:'image',url:$('coverUrl').value.trim(),alt:$('coverAlt').value.trim()}:null;
+ changed();renderMedia(doc.cover,$('coverPreview'));
+});
+$('removeCover').addEventListener('click',()=>{doc.cover=null;changed();renderCover();});
+$('coverFile').addEventListener('change',async()=>{
+ const file=$('coverFile').files?.[0];if(!file||!doc)return;
+ const extensions={'image/jpeg':'jpg','image/png':'png','image/webp':'webp','image/gif':'gif'};
+ if(!extensions[file.type]||file.size>20*1024*1024){status('Обложка: JPG, PNG, WebP или GIF до 20 МБ.');return;}
+ const target=doc;$('coverFile').disabled=true;status('Загружаем обложку…');
+ try{const path=`covers/${crypto.randomUUID()}.${extensions[file.type]}`;const {error}=await api.storage.from('quiz-media').upload(path,file,{contentType:file.type,upsert:false});if(error)throw error;
+ const {data}=api.storage.from('quiz-media').getPublicUrl(path);
+ if(doc!==target){status('Квиз был переключён. Вернитесь к нему и выберите обложку заново.');return;}
+ doc.cover={type:'image',url:data.publicUrl,alt:$('coverAlt').value.trim()};changed();renderCover();status('Обложка загружена. Сохраните черновик и опубликуйте квиз, чтобы обновить каталог.');
+ }catch(e){status(e.message||'Не удалось загрузить обложку');}finally{$('coverFile').disabled=false;}
+});

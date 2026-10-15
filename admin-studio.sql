@@ -24,6 +24,9 @@ create or replace function public.validate_quiz_document(doc jsonb) returns void
 declare r jsonb; q jsonb; o jsonb; k text; n integer:=0; v numeric; selected integer; opts integer;
 begin
  if jsonb_typeof(doc) is distinct from 'object' or length(btrim(coalesce(doc->>'title',''))) not between 1 and 100 then raise exception 'Укажите название квиза (до 100 символов)'; end if;
+ if doc->'cover' is not null and doc->'cover'<>'null'::jsonb then
+  if jsonb_typeof(doc->'cover') is distinct from 'object' or coalesce(doc->'cover'->>'type','')<>'image' or coalesce(doc->'cover'->>'url','') !~ '^https://[^[:space:]]+$' or length(doc->'cover'->>'url')>2000 or length(coalesce(doc->'cover'->>'alt',''))>200 then raise exception 'Обложка: укажите HTTPS-ссылку на изображение и описание до 200 символов'; end if;
+ end if;
  if length(coalesce(doc->>'description',''))>500 or length(coalesce(doc->>'category',''))>60 then raise exception 'Слишком длинное описание или тема'; end if;
  if coalesce(doc->>'price','') !~ '^[0-9]{1,8}(\.[0-9]{1,2})?$' then raise exception 'Цена: от 0 до 99999999,99 ₽'; end if;
  if coalesce(doc->>'score_timing','') not in ('question','round','quiz') or coalesce(doc->>'reveal_timing','') not in ('question','round','quiz') then raise exception 'Выберите порядок баллов и раскрытия ответов'; end if;
@@ -110,7 +113,7 @@ create or replace function public.admin_unpublish_quiz(p_id uuid) returns void l
  update public.admin_quizzes set published_revision=null where id=p_id;
 end $$;
 create or replace function public.list_quiz_catalog() returns jsonb language sql stable security definer set search_path='' as $$
- select coalesce(jsonb_agg(jsonb_build_object('key',key,'title',title,'category',coalesce(public_metadata->>'category','Общие знания'),'description',coalesce(public_metadata->>'description',''),'icon',coalesce(public_metadata->>'icon','🧩'),'level',coalesce(public_metadata->>'level','Средний'),'question_count',jsonb_array_length(questions),'price',sale_price,'currency','RUB','managed',managed,'available',sale_price=0) order by key),'[]') from public.quiz_templates where enabled and key<>'starter'
+ select coalesce(jsonb_agg(jsonb_build_object('key',key,'title',title,'category',coalesce(public_metadata->>'category','Общие знания'),'description',coalesce(public_metadata->>'description',''),'icon',coalesce(public_metadata->>'icon','🧩'),'level',coalesce(public_metadata->>'level','Средний'),'question_count',jsonb_array_length(questions),'price',sale_price,'currency','RUB','managed',managed,'available',sale_price=0,'cover',public_metadata->'cover') order by key),'[]') from public.quiz_templates where enabled and key<>'starter'
 $$;
 create or replace function public.create_quiz_room_v2(p_quiz_key text default 'starter') returns table(room_code text,host_secret uuid) language plpgsql security definer set search_path='' as $$
 declare made record; t public.quiz_templates%rowtype;

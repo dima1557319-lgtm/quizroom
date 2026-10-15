@@ -16,6 +16,7 @@ function renderCatalog(){
  const cards=matches.slice(0,limit).map(({q,i})=>{
   const card=make('article','card');
   const art=make('div','art',q.icon);art.setAttribute('aria-hidden','true');
+  if(q.cover?.type==='image'&&typeof q.cover.url==='string'){try{const url=new URL(q.cover.url);if(url.protocol==='https:'){const img=make('img','quiz-cover');img.src=url.href;img.alt=q.cover.alt||'';img.loading='lazy';img.decoding='async';img.referrerPolicy='no-referrer';img.addEventListener('error',()=>{art.textContent=q.icon||'🧩';},{once:true});art.replaceChildren(img);}}catch{}}
   const body=make('div','card-body');
   body.append(make('div','meta',`${q.category.toLocaleUpperCase('ru')} · ${q.level} · ${q.question_count||q.questions.length} вопросов`),make('h3','',q.title),make('p','',q.desc));
   const bottom=make('div','bottom');const link=make('a','primary small','Играть вместе →');link.href=`./room-test.html?quiz=${quizIds[i]}`;link.setAttribute('aria-label',`Играть вместе: ${q.title}`);const price=Number(q.price||0);bottom.append(make('span','price',price?new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:2}).format(price):'Бесплатно'));
