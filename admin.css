@@ -4,4 +4,4 @@
 #editor{scroll-margin-top:20px}#quizList{max-height:65vh;overflow-y:auto;overscroll-behavior:contain}
 @media(max-width:850px){.studio-layout>#editor{order:-1}#quizList{max-height:320px}}
 
-#coverPreview img{width:min(100%,640px);aspect-ratio:16/9;object-fit:cover;max-height:none}#coverEditor{background:var(--surface,#17132f)}
+#coverPreview img{width:min(100%,640px);aspect-ratio:16/9;object-fit:cover;max-height:none}
