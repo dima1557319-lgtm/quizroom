@@ -22,7 +22,7 @@ async function refresh(){
   if(stopped)return;
   const me=data.players.find(p=>p.player_id===id);
   el('identity').textContent=`${me?.player_name||'Игрок'} · Комната ${data.room_code}`;
-  el('status').textContent=data.status==='waiting'?'Вы в игре! Ожидаем начала.':data.status==='finished'?'Игра завершена':'Выберите один вариант ответа';
+  el('status').textContent=data.status==='waiting'?'Вы в игре! Ожидаем начала.':data.status==='finished'?'Игра завершена':data.phase==='reveal'?'Вопрос закрыт':data.question?.kind==='multiple'?'Выберите один или несколько вариантов': ['text','manual'].includes(data.question?.kind)?'Введите текст ответа':'Выберите один вариант ответа';
   renderGame(data,answer);renderRanking(data.players,el('ranking'));el('rankingTitle').hidden=data.status==='waiting';
   el('connection').textContent=connected?'Обновление в реальном времени подключено':'Резервное обновление каждые 2 секунды';
   if(!channel)channel=supabase.channel(data.realtime_topic,{config:{private:false}}).on('broadcast',{event:'lobby_changed'},()=>{void refresh();}).subscribe(s=>{connected=s==='SUBSCRIBED';if(connected)void refresh();});
