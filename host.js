@@ -1,4 +1,5 @@
 import { supabase } from './supabase-client.js';
+import { renderHostGame } from './host-game.js';
 
 const byId = (id) => document.getElementById(id);
 let channel, timer, busy = false, stopped = false, subscribed = false;
@@ -15,7 +16,7 @@ async function refresh() {
   busy = true;
   byId('refresh').disabled = true;
   try {
-    const { data, error } = await supabase.rpc('get_quiz_host_lobby', {
+    const { data, error } = await supabase.rpc('get_quiz_game_host', {
       p_code: roomCode, p_host_secret: hostSecret
     });
     if (error) {
@@ -34,7 +35,7 @@ async function refresh() {
     }
     const nodes = data.players.map(player => {
       const item = document.createElement('li');
-      item.textContent = player.player_name;
+      item.textContent = `${player.player_name} — ${player.score} очков`;
       return item;
     });
     byId('players').replaceChildren(...nodes);
@@ -43,6 +44,7 @@ async function refresh() {
     byId('empty').hidden = nodes.length !== 0;
     byId('lobby').hidden = false;
     byId('status').textContent = nodes.length === 20 ? 'Комната заполнена' : 'Комната готова к подключению';
+    renderHostGame(data, refresh);
     byId('connection').textContent = subscribed ? 'Обновление в реальном времени подключено' : 'Резервное обновление каждые 5 секунд';
     if (!channel && typeof data.realtime_topic === 'string' && data.realtime_topic.length >= 32) {
       // Random capability topic carries invalidation only, never names or tokens.
@@ -55,7 +57,7 @@ async function refresh() {
         });
     }
   } catch {
-    byId('status').textContent = 'Не удалось обновить данные. Проверьте подключение и настройку серверной функции get_quiz_host_lobby.';
+    byId('status').textContent = 'Не удалось обновить данные. Проверьте подключение к сети.';
     byId('connection').textContent = 'Список может быть устаревшим';
   } finally {
     busy = false;
