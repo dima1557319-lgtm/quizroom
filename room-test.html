@@ -128,7 +128,7 @@
   <script type="module">
     import { supabase }
       from "./supabase-client.js";
-    import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-15';
+    import { quizzes, quizIds } from './quiz-catalog.js?v=20261015-catalog30';
     const selectedQuiz = new URLSearchParams(location.search).get('quiz');
     const selectedIndex = quizIds.indexOf(selectedQuiz);
     if(selectedQuiz === 'custom') document.getElementById('quizSelection').textContent='Свой квиз · вопросы и баллы настраиваются перед началом';
