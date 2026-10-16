@@ -5,7 +5,7 @@ function readDraft(id){try{const data=JSON.parse(sessionStorage.getItem(draftKey
 function saveDraft(id,response){try{sessionStorage.setItem(draftKey(),JSON.stringify({question:id,response}));}catch{}}
 
 const make=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
-function answerText(q){if(q.correct_choices?.length)return q.correct_choices.map(i=>q.options?.[i]).filter(Boolean).join('; ');if(q.accepted?.length)return q.accepted.join('; ');return 'Оценка ведущего';}
+function answerText(q){if(q.kind==='manual')return 'Оценка ведущего';if(q.accepted?.length)return q.accepted.join('; ');if(q.correct_choices?.length)return q.correct_choices.map(i=>q.options?.[i]).filter(Boolean).join('; ');if(q.accepted?.length)return q.accepted.join('; ');return 'Оценка ведущего';}
 export function renderRichGame(data,onAnswer){
  const q=data.question,finished=data.status==='finished';
  document.getElementById('game').hidden=data.status==='waiting';
@@ -18,11 +18,11 @@ export function renderRichGame(data,onAnswer){
   const media=make('div');renderMedia(q.media,media);target.append(media);
   if(q.animation==='fade')target.classList.add('question-fade');else target.classList.remove('question-fade');
   if(onAnswer){
-   const form=make('form');const draft=data.my_response||readDraft(q.id);
+   const form=make('form');const draft=data.my_response||(data.preview?null:readDraft(q.id));
    if(['single','multiple'].includes(q.kind)){
     q.options.forEach((value,i)=>{const label=make('label');label.className='option';const input=make('input');input.type=q.kind==='single'?'radio':'checkbox';input.name='quiz-choice';input.value=String(i);input.dataset.richAnswer='true';input.checked=draft?.choices?.includes(i)||false;label.append(input,document.createTextNode(' '+value));if(q.correct_choices?.includes(i))label.classList.add('correct');form.append(label);});
    }else{const label=make('label','Ваш ответ');const text=make('textarea');text.maxLength=500;text.required=true;text.value=draft?.text||'';text.dataset.richAnswer='true';label.append(text);form.append(label);}
-   form.addEventListener('input',()=>{const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value};saveDraft(q.id,response);});
+   form.addEventListener('input',()=>{const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value};if(!data.preview)saveDraft(q.id,response);});
    const button=make('button','Отправить ответ');button.type='submit';button.dataset.richAnswer='true';form.append(button);
    form.addEventListener('submit',e=>{e.preventDefault();if(data.phase!=='question'||data.my_response!=null)return;const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value.trim()};if(response.choices&&!response.choices.length)return;void onAnswer(q.id,response);});target.append(form);
   }else if(q.options?.length){const list=make('ol');q.options.forEach((value,i)=>{const li=make('li',value);if(q.correct_choices?.includes(i))li.className='correct';list.append(li);});target.append(list);}else target.append(make('p',q.kind==='manual'?'Игроки отвечают текстом; оценка ведущим.':'Игроки вводят ответ текстом.'));
