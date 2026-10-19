@@ -66,3 +66,7 @@ host-lobby.sql добавляет колонку lobby_topic, RPC get_quiz_host_
 Верните прежний room-test.html и удалите host.html/host.js коммитом GitHub. Добавленные SQL-объекты можно оставить: они не меняют контракты старых страниц. Для полного отката отдельно удаляются только quiz_lobby_changed, notify_quiz_lobby(), get_quiz_host_lobby(text,uuid), затем rooms.lobby_topic. Не удаляйте таблицы, игроков, исходные RPC или enforce_room_capacity.
 
 Справка Supabase по Broadcast: https://supabase.com/docs/guides/realtime/broadcast
+
+## Режим без ведущего
+
+Реализация режима «Все играют» и инструкции установки: [NO-HOST.md](./NO-HOST.md). Требуется применить `no-host.sql` после `game-reliability.sql` перед публикацией новых файлов интерфейса.

@@ -3,6 +3,9 @@ let signature='';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
 export function renderGameSummary(data){
  const round=document.getElementById('roundBreak');if(round){round.hidden=!(data.status==='playing'&&data.phase==='reveal'&&data.question?.round_end);if(!round.hidden){round.replaceChildren(node('h3',`${data.question.round||'Тур'} завершён`),node('p',data.next_round_title?`Далее: ${data.next_round_title}. Ведущий начнёт следующий тур, когда все будут готовы.`:'Все вопросы пройдены. Ведущий покажет итоговые результаты.'));}}
+ if(round&&!round.hidden&&data.play_mode==='everyone'){
+  round.lastChild.textContent=data.next_round_title?`Далее: ${data.next_round_title}. Организатор начнёт следующий тур, когда все будут готовы.`:'Все вопросы пройдены. Организатор покажет итоговые результаты.';
+ }
  const target=document.getElementById('results');if(!target)return;target.hidden=data.status!=='finished'||!data.results;
  if(target.hidden)return;const report=data.results,key=JSON.stringify(report);if(signature===key)return;signature=key;
  const winners=report.players.filter(p=>p.rank===1).map(p=>p.player_name);

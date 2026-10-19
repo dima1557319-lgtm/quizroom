@@ -1,5 +1,5 @@
-import {renderGameSummary} from './game-summary.js?v=play2';
-import {renderRichGame} from './rich-game.js?v=play2';
+import {renderGameSummary} from './game-summary.js?v=everyone1';
+import {renderRichGame} from './rich-game.js?v=everyone1';
 export const formatPoints = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2}).format(Number(value));
 const el = id => document.getElementById(id);
 let state, offset = 0, renderKey;
@@ -44,7 +44,7 @@ export function renderGame(data, onAnswer) {
 function tick() {
   if (!state || state.status === 'waiting') return;
   const seconds = remaining();
-  el('gameTimer').textContent = state.phase === 'question' ? (seconds ? `Осталось: ${seconds} сек.` : 'Время вышло. Ожидаем ведущего.') : '';
+  el('gameTimer').textContent = state.phase === 'question' ? (seconds ? `Осталось: ${seconds} сек.` : state.play_mode==='everyone'?'Время вышло. Подводим итоги вопроса…':'Время вышло. Ожидаем ведущего.') : '';
   for(const control of document.querySelectorAll('[data-rich-answer]')) control.disabled=state.phase!=='question'||state.my_response!=null||seconds===0||control.dataset.sending==='true';
   for (const button of document.querySelectorAll('[data-answer]')) {
     button.disabled = state.phase !== 'question' || state.my_answer != null || seconds === 0 || button.dataset.sending === 'true';

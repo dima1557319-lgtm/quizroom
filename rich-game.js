@@ -12,6 +12,7 @@ export function renderRichGame(data,onAnswer){
  document.getElementById('roundTitle').textContent=finished?'Игра завершена — итоговые результаты':`${q.round||'Тур'} · Вопрос ${q.number} из ${data.total_questions} · Баллы: ${q.points}`;
  document.getElementById('questionText').textContent=finished?'Спасибо за игру!':q.text;
  document.getElementById('answerStatus').textContent=finished?'Итоги игры':data.phase==='reveal'?(q.revealed?`Правильный ответ: ${answerText(q)}`:'Ответы сохранены. Разбор будет позже по правилам квиза.'):data.my_response!=null?'Ответ принят. Ожидаем ведущего.':`Ответили: ${data.answer_count} из ${data.players.length}`;
+ if(data.play_mode==='everyone'&&data.phase==='question'&&data.my_response!=null)document.getElementById('answerStatus').textContent='Ответ принят. Ожидаем остальных игроков.';
  const nextKey=JSON.stringify([q.id,data.phase,data.my_response,q.revealed,finished,!!onAnswer,data.review]);if(key===nextKey)return;key=nextKey;
  const target=document.getElementById('options');target.replaceChildren();
  if(!finished){

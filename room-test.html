@@ -102,6 +102,12 @@
     <h1>QuizRoom</h1>
     <p id="quizSelection">Создай игровую комнату для друзей</p>
 
+    <label for="playMode">Как играем?</label>
+    <select id="playMode" style="width:100%;padding:14px;margin:12px 0;font:inherit">
+      <option value="everyone">Все играют — без ведущего</option>
+      <option value="hosted">С отдельным ведущим</option>
+    </select>
+    <p id="modeHelp">До 20 игроков. Первый вошедший запускает игру и переключает вопросы. Баллы считает система.</p>
     <button id="createBtn">
       Создать комнату
     </button>
@@ -118,7 +124,7 @@
       </a>
 
       <p>Максимум 20 игроков</p>
-      <p><a href="./host.html">Открыть экран ведущего</a></p>
+      <p><a id="roomScreen" href="./host.html">Открыть экран ведущего</a></p>
     </section>
 
     <p id="status" role="status"></p>
@@ -150,11 +156,19 @@
 
     const status =
       document.getElementById("status");
+    const playMode = document.getElementById('playMode');
+    playMode.addEventListener('change', () => {
+      document.getElementById('modeHelp').textContent = playMode.value === 'everyone'
+        ? 'До 20 игроков. Первый вошедший запускает игру и переключает вопросы. Баллы считает система.'
+        : 'Ведущий управляет игрой отдельно, остальные подключаются как игроки.';
+    });
 
     button.addEventListener("click", async () => {
       button.disabled = true;
       details.style.display = "none";
       status.textContent = "Создаём комнату...";
+      const everyone = playMode.value === 'everyone';
+      playMode.disabled = true;
 
       try {
         if (typeof QRCode === "undefined") {
@@ -164,7 +178,7 @@
         }
 
         const { data, error } = await supabase.rpc(
-          "create_quiz_room_v2", {p_quiz_key: selectedQuiz || 'starter'}
+          everyone ? "create_quiz_room_everyone" : "create_quiz_room_v2", {p_quiz_key: selectedQuiz || 'starter'}
         );
 
         if (error) throw error;
@@ -182,16 +196,14 @@
 
         // Each tab has one active role.
         for (const key of ['quizroom_player_id','quizroom_player_secret','quizroom_player_room']) sessionStorage.removeItem(key);
-        sessionStorage.setItem('quizroom_role','host');
-        sessionStorage.setItem(
-          "quizroom_host_secret",
-          room.host_secret
-        );
-
-        sessionStorage.setItem(
-          "quizroom_room_code",
-          roomCode
-        );
+        sessionStorage.removeItem('quizroom_host_secret');
+        sessionStorage.removeItem('quizroom_room_code');
+        sessionStorage.removeItem('quizroom_role');
+        if (!everyone) {
+          sessionStorage.setItem('quizroom_role','host');
+          sessionStorage.setItem('quizroom_host_secret', room.host_secret);
+          sessionStorage.setItem('quizroom_room_code', roomCode);
+        }
         if (selectedIndex >= 0) {
           sessionStorage.setItem(`quizroom_quiz_${roomCode}`, selectedQuiz);
         }
@@ -226,6 +238,9 @@
           document.getElementById("joinLink");
 
         link.href = joinUrl.toString();
+        const roomScreen = document.getElementById('roomScreen');
+        roomScreen.href = everyone ? joinUrl.toString() : './host.html';
+        roomScreen.textContent = everyone ? 'Войти в комнату и играть' : 'Открыть экран ведущего';
 
         details.style.display = "block";
         status.textContent =
@@ -235,6 +250,7 @@
         status.textContent =
           "Ошибка: " + err.message;
         button.disabled = false;
+        playMode.disabled = false;
       }
     });
   </script>
