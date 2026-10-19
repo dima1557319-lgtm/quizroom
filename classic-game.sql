@@ -52,10 +52,23 @@ begin
    if coalesce(s->>k,'') not in ('question','round','quiz') or (s->>'submission'='round' and s->>k='question') then raise exception 'Бланк тура раскрывает ответы и очки только после тура или игры';end if;
   end loop;
   if jsonb_typeof(s->'text') is distinct from 'string' or length(s->>'text')>2000 or coalesce(s->>'difficulty','') not in ('Лёгкий','Средний','Сложный','Смешанный') then raise exception 'Проверьте текст правил и сложность тура';end if;
+  if (s ? 'theme' and jsonb_typeof(s->'theme') is distinct from 'string') or length(coalesce(s->>'theme',''))>100 or (s ? 'theme_hidden' and jsonb_typeof(s->'theme_hidden') is distinct from 'boolean') then raise exception 'Проверьте тему тура';end if;
   if jsonb_typeof(s->'stakes') is distinct from 'array' then raise exception 'Укажите разрешённые ставки';end if;
   if jsonb_array_length(s->'stakes') not between 1 and 3 or not(s->'stakes' @> '[0]'::jsonb) or (select count(distinct value) from jsonb_array_elements(s->'stakes'))<>jsonb_array_length(s->'stakes') then raise exception 'Ставки: 0, 1, 2 без повторов';end if;
   for v in select value from jsonb_array_elements(s->'stakes') loop if v::text not in ('0','1','2') then raise exception 'Недопустимая ставка';end if;end loop;
+  if s ? 'stake_policy' and s->'stake_policy'<>'null'::jsonb then
+   if jsonb_typeof(s->'stake_policy') is distinct from 'array' or jsonb_array_length(s->'stake_policy')<>jsonb_array_length(s->'stakes') then raise exception 'Проверьте таблицу ставок';end if;
+   if (select count(distinct value->>'stake') from jsonb_array_elements(s->'stake_policy'))<>jsonb_array_length(s->'stakes') then raise exception 'Повтор ставки в таблице';end if;
+   for v in select value from jsonb_array_elements(s->'stake_policy') loop
+    if coalesce(v->>'stake','') !~ '^[0-2]$' or not(s->'stakes' @> jsonb_build_array(v->'stake')) then raise exception 'Лишняя ставка в таблице';end if;
+    foreach k in array array['correct_bonus','wrong'] loop
+     if jsonb_typeof(v->k) is distinct from 'number' or coalesce(v->>k,'') !~ '^-?[0-9]{1,5}(\.[0-9]{1,2})?$' then raise exception 'Начисление: число с двумя знаками';end if;
+     if abs((v->>k)::numeric)>10000 then raise exception 'Начисление: от −10000 до 10000';end if;
+    end loop;
+   end loop;
+  end if;
   for q in select value from jsonb_array_elements(r->'questions') loop
+   if q ? 'difficulty' and q->>'difficulty' not in ('Лёгкий','Средний','Сложный') then raise exception 'Проверьте сложность вопроса';end if;
    if q->>'kind'='manual' or (jsonb_array_length(s->'stakes')>1 and coalesce((q->>'partial')::boolean,false)) then raise exception 'Используйте автоматическую проверку; частичный зачёт несовместим со ставками';end if;
    if q ? 'media_start' or q ? 'media_end' then
     if coalesce(q->'media'->>'type','') not in ('audio','video') or jsonb_typeof(q->'media_start') is distinct from 'number' or jsonb_typeof(q->'media_end') is distinct from 'number' then raise exception 'Укажите начало и конец медиафрагмента';end if;
@@ -114,7 +127,7 @@ begin
  else perform public.classic_set_phase(r.id,'question',q.duration);end if;
 end $$;
 create or replace function public.classic_freeze(p_room uuid,p_question uuid default null) returns void language plpgsql security definer set search_path='' as $$
-declare r public.rooms%rowtype;q public.questions%rowtype;p public.players%rowtype;draft public.classic_drafts%rowtype;s jsonb;right_answer boolean;base numeric;award numeric;hits integer;misses integer;
+declare r public.rooms%rowtype;q public.questions%rowtype;p public.players%rowtype;draft public.classic_drafts%rowtype;s jsonb;policy jsonb;right_answer boolean;base numeric;award numeric;hits integer;misses integer;
 begin
  select * into strict r from public.rooms where id=p_room;s:=public.classic_rules(r.id);
  for q in select * from public.questions where room_id=r.id and (definition->>'round_number')::int=(r.classic_state->>'round')::int+1 and (p_question is null or id=p_question) loop
@@ -131,7 +144,8 @@ begin
      if coalesce((q.definition->>'partial')::boolean,false) then base:=q.points*greatest(0,hits-misses)/jsonb_array_length(q.definition->'answer_key');elsif right_answer then base:=q.points;end if;
     end if;
    end if;
-   award:=case when draft.response is null then 0 when right_answer then base+coalesce(draft.stake,0) when coalesce(draft.stake,0)>0 then -draft.stake else base end;
+   select value into policy from jsonb_array_elements(coalesce(nullif(s->'stake_policy','null'::jsonb),'[]')) where (value->>'stake')::int=coalesce(draft.stake,0);
+   award:=case when draft.response is null then 0 when right_answer then base+coalesce((policy->>'correct_bonus')::numeric,draft.stake,0) when coalesce(draft.stake,0)>0 then coalesce((policy->>'wrong')::numeric,-draft.stake) else base+coalesce((policy->>'wrong')::numeric,0) end;
    insert into public.classic_awards(room_id,round_no,player_id,question_id,points,base_points,stake,correct,visible) values(r.id,(r.classic_state->>'round')::int+1,p.id,q.id,round(award,2),base,coalesce(draft.stake,0),right_answer,s->>'score_timing'='question') on conflict(player_id,question_id) do nothing;
    update public.classic_drafts set locked=true where player_id=p.id and question_id=q.id;
   end loop;
@@ -193,7 +207,7 @@ begin
  select * into strict r from public.rooms where id=p_room;s:=public.classic_rules(r.id);ph:=r.classic_state->>'phase';rn:=coalesce((r.classic_state->>'round')::int,0)+1;
  shown:=case when ph='intro' then 0 else r.current_question end;
  closed:=ph in ('review','round_results','break','finished');
- select coalesce(jsonb_agg(jsonb_build_object('id',q.id,'number',q.question_number,'text',q.question_text,'kind',q.definition->>'kind','options',q.definition->'options','points',q.points,'duration',q.duration,'media',q.definition->'media','media_start',q.definition->'media_start','media_end',q.definition->'media_end',
+ select coalesce(jsonb_agg(jsonb_build_object('id',q.id,'number',q.question_number,'text',q.question_text,'rules',case when r.status='finished' then r.admin_document->'rounds'->((q.definition->>'round_number')::int-1)->'rules' else null end,'kind',q.definition->>'kind','options',q.definition->'options','points',q.points,'duration',q.duration,'animation',q.definition->>'animation','difficulty',q.definition->>'difficulty','media',q.definition->'media','media_start',q.definition->'media_start','media_end',q.definition->'media_end',
   'revealed',r.status='finished' or (closed and s->>'reveal_timing'<>'quiz') or (s->>'submission'='question' and s->>'reveal_timing'='question' and (q.question_number<r.current_question or ph='answer')),
   'answer',case when r.status='finished' or (closed and s->>'reveal_timing'<>'quiz') or (s->>'submission'='question' and s->>'reveal_timing'='question' and (q.question_number<r.current_question or ph='answer')) then jsonb_build_object('accepted',q.definition->'accepted','choices',q.definition->'answer_key','explanation',q.definition->>'explanation','media',q.definition->'answer_media') else null end) order by q.question_number),'[]') into qs
  from public.questions q where q.room_id=r.id and ((q.definition->>'round_number')::int=rn or r.status='finished') and q.question_number<=shown;
@@ -201,7 +215,7 @@ begin
  select coalesce(jsonb_agg(jsonb_build_object('question_id',a.question_id,'points',a.points,'stake',a.stake,'correct',a.correct)),'[]') into rows from public.classic_awards a where a.player_id=p_player and a.room_id=r.id and a.visible;
  return jsonb_build_object('format','classic','play_mode','everyone','room_code',r.code,'quiz_title',r.admin_document->>'title','status',r.status,'phase','classic','server_now',clock_timestamp(),'realtime_topic','quiz-lobby:'||r.lobby_topic::text,'can_control',r.controller_player_id=p_player,'controller_name',(select name from public.players where id=r.controller_player_id),
  'players',public.classic_standings(r.id),'question',null,'results',r.game_result,'total_questions',(select count(*) from public.questions where room_id=r.id),
- 'classic',jsonb_build_object('phase',ph,'version',coalesce((r.classic_state->>'version')::int,0),'round_no',rn,'round_title',r.admin_document->'rounds'->(rn-1)->>'title','round_count',jsonb_array_length(r.admin_document->'rounds'),'cursor',r.current_question,'deadline',r.classic_state->'deadline','rules',s,'questions',qs,'drafts',drafts,'awards',rows,'submitted',exists(select 1 from public.classic_submissions where room_id=r.id and round_no=rn and player_id=p_player)));
+ 'classic',jsonb_build_object('phase',ph,'version',coalesce((r.classic_state->>'version')::int,0),'round_no',rn,'round_title',r.admin_document->'rounds'->(rn-1)->>'title','round_count',jsonb_array_length(r.admin_document->'rounds'),'cursor',r.current_question,'deadline',r.classic_state->'deadline','rules',case when coalesce((s->>'theme_hidden')::boolean,false) and not closed then s-'theme' else s end,'preflight',case when ph='intro' then (select coalesce(jsonb_agg(q.definition->'media'),'[]') from public.questions q where q.room_id=r.id and (q.definition->>'round_number')::int=rn and q.definition->'media' is not null and q.definition->'media'<>'null'::jsonb) else '[]'::jsonb end,'questions',qs,'drafts',drafts,'awards',rows,'submitted',exists(select 1 from public.classic_submissions where room_id=r.id and round_no=rn and player_id=p_player)));
 end $$;
 
 create or replace function public.get_quiz_game_player(p_player_id uuid,p_player_secret uuid) returns jsonb language plpgsql security definer set search_path='' as $$

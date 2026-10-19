@@ -2,6 +2,6 @@
   "name": "quizroom",
   "private": true,
   "type": "module",
-  "scripts": {"test": "QUIZROOM_CLASSIC_TEST=1 node no-host-tests.mjs && node classic-client-tests.mjs"},
+  "scripts": {"test": "QUIZROOM_CLASSIC_TEST=1 node no-host-tests.mjs && node classic-client-tests.mjs && node classic-admin-tests.mjs"},
   "devDependencies": {"@electric-sql/pglite": "0.5.10", "linkedom": "0.18.13"}
 }

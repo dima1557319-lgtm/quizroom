@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
-import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic1';
-import {validateQuiz,importQuiz} from './studio-document.js?v=classic1';
-import {ClassicPreview} from './classic-preview.js?v=classic1';
-import {renderClassic,resetClassicView} from './classic-view.js?v=classic1';
+import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic3';
+import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
+import {ClassicPreview} from './classic-preview.js?v=classic3';
+import {renderClassic,resetClassicView} from './classic-view.js?v=classic3';
 const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
 for(const name of ['admin.js','classic-document.js','classic-editor.js','classic-view.js','classic-preview.js','player.js','player-controls.js','game-summary.js','game-files.js','quiz-preview.js']){const result=spawnSync(process.execPath,['--check',name],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);}
 const template=classicTemplate();assert.equal(template.rounds.length,7);assert.equal(template.rounds.flatMap(r=>r.questions).length,39);assert.equal(classicErrors(template).length,0);assert.ok(validateQuiz(template).length>0,'Empty questions must block publish');
@@ -26,4 +26,7 @@ renderClassic(state,async(name,args)=>model2.request(name,args));let input=docum
 renderClassic(state,async(name,args)=>model2.request(name,args));assert.equal(document.querySelector('#classicGame textarea'),input,'Polling must not destroy focused form');assert.equal(input.value,'елка');
 document.querySelector('#classicGame form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,0));assert.equal(model2.drafts[0].response.text,'елка');
 const readonly={...model2.snapshot(),can_control:false};renderClassic(readonly,async()=>{});assert.equal(document.querySelectorAll('[data-classic-control]').length,0);
-console.log('PASS: author templates/validation/import, preview phases/scoring, stale snapshots, persistent input, save action, role controls and syntax');process.exit(0);
+const custom=structuredClone(doc);custom.rounds[0].rules.stake_policy=[{stake:0,correct_bonus:0,wrong:0},{stake:1,correct_bonus:5,wrong:-4},{stake:2,correct_bonus:8,wrong:-7}];assert.equal(validateQuiz(custom).length,0);assert.deepEqual(importQuiz({format:'quizroom-quiz',version:2,document:custom}).rounds[0].rules.stake_policy,custom.rounds[0].rules.stake_policy);
+const customModel=new ClassicPreview(custom);customModel.request('classic_action',{p_action:'advance',p_version:1});customModel.request('classic_save_response',{p_question_id:'test-q',p_response:{text:'елка'},p_stake:2,p_revision:0});customModel.freeze();assert.equal(customModel.awards[0].points,9);
+const mediaDoc=structuredClone(doc);mediaDoc.rounds[0].rules.theme='Секрет';mediaDoc.rounds[0].rules.theme_hidden=true;mediaDoc.rounds[0].questions[0].media={type:'audio',url:'https://example.com/file.mp3'};const mediaModel=new ClassicPreview(mediaDoc);resetClassicView();renderClassic(mediaModel.snapshot(),async()=>{});assert.equal(document.querySelector('[data-classic-control]').disabled,true);assert.ok(!document.querySelector('#classicGame').textContent.includes('Секрет'));document.querySelector('#classicGame audio').dispatchEvent(new window.Event('loadedmetadata'));assert.equal(document.querySelector('[data-classic-control]').disabled,false);
+console.log('PASS: author templates/validation/import, preview phases/scoring, stale snapshots, persistent input, save action, role controls, custom stakes, media preload, hidden theme and syntax');process.exit(0);

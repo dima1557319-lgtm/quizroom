@@ -1,6 +1,6 @@
-import {validateQuiz,importQuiz,countQuestions} from './studio-document.js?v=classic1';
-import {isClassic,classicTemplate,roundRules,rulesText} from './classic-document.js?v=classic1';
-import {editRoundRules} from './classic-editor.js?v=classic1';
+import {validateQuiz,importQuiz,countQuestions} from './studio-document.js?v=classic3';
+import {isClassic,classicTemplate,roundRules,rulesText} from './classic-document.js?v=classic3';
+import {editRoundRules} from './classic-editor.js?v=classic3';
 import {downloadFile} from './game-files.js?v=play2';
 import './admin-banners.js?v=digest1';
 import {adminClient as api} from './admin-client.js?v=studio1';
@@ -69,7 +69,7 @@ function renderRounds(){
    if(q.kind==='manual')card.append(node('p','Игрок вводит текст. Ведущий оценивает его от 0 до стоимости вопроса, до перехода дальше.'));
    const config=node('div');config.className='fields';field(config,'Баллы за правильный ответ',q.points,v=>q.points=decimal(v)).inputMode='decimal';const duration=field(config,'Время на ответ, секунд',q.duration,v=>q.duration=Number(v),'number');duration.min=5;duration.max=300;duration.step=1;card.append(config);
    mediaFields(card,'Медиа в вопросе',q,'media');mediaFields(card,'Медиа при раскрытии ответа',q,'answer_media');
-   if(isClassic(doc)){for(const [key,label]of [['media_start','Начало аудио/видео, секунд'],['media_end','Конец аудио/видео, секунд']])field(card,label,q[key],v=>{if(v==='')delete q[key];else q[key]=Number(v);},'number');}
+   if(isClassic(doc)){select(card,'Сложность вопроса',q.difficulty||'Средний',[['Лёгкий','Лёгкий'],['Средний','Средний'],['Сложный','Сложный']],v=>q.difficulty=v);for(const [key,label]of [['media_start','Начало аудио/видео, секунд'],['media_end','Конец аудио/видео, секунд']])field(card,label,q[key],v=>{if(v==='')delete q[key];else q[key]=Number(v);},'number');}
    select(card,'Появление вопроса',q.animation||'none',[['none','Без анимации'],['fade','Плавное появление']],v=>q.animation=v);
    field(card,'Пояснение к ответу',q.explanation,v=>q.explanation=v,'textarea').maxLength=2000;fold.append(card);section.append(fold);
   });
@@ -171,5 +171,5 @@ $('undoEdit').addEventListener('click',()=>{if(!history.length)return;doc=histor
 for(const [id,expand]of [['collapseQuestions',false],['expandQuestions',true]])$(id).addEventListener('click',()=>{allExpanded=expand;expanded=new WeakSet();for(const round of doc.rounds)for(const q of round.questions){if(expand)collapsed.delete(q);else collapsed.add(q);}for(const fold of $('roundEditor').querySelectorAll('.question-fold'))fold.open=expand;});
 document.addEventListener('keydown',e=>{if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='s'&&!$('studio').hidden&&!$('quizArea').hidden&&doc){e.preventDefault();void action(save);}});
 window.addEventListener('online',()=>{if(dirty&&!conflict)scheduleSave();});
-$('playPreview').addEventListener('click',()=>{if(!showValidation())return;const data=documentValue();const frame=$('playerPreviewFrame');frame.onload=()=>frame.contentWindow.postMessage({type:'quizroom-admin-preview',document:data},location.origin);frame.src='./quiz-preview.html?v=classic1';$('playerPreview').showModal();});
+$('playPreview').addEventListener('click',()=>{if(!showValidation())return;const data=documentValue();const frame=$('playerPreviewFrame');frame.onload=()=>frame.contentWindow.postMessage({type:'quizroom-admin-preview',document:data},location.origin);frame.src='./quiz-preview.html?v=classic3';$('playerPreview').showModal();});
 $('playerPreview').addEventListener('close',()=>{$('playerPreviewFrame').src='about:blank';});

@@ -1,11 +1,11 @@
 import {gameRpc} from './game-rpc.js?v=play2';
 import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js';
-import { renderGame, renderRanking } from './game-view.js?v=classic1';
-import { renderEveryoneControls } from './player-controls.js?v=classic1';
-import {renderClassic} from './classic-view.js?v=classic1';
-import {renderGameSummary} from './game-summary.js?v=classic1';
-import {newestClassic} from './classic-document.js?v=classic1';
+import { renderGame, renderRanking } from './game-view.js?v=classic3';
+import { renderEveryoneControls } from './player-controls.js?v=classic3';
+import {renderClassic} from './classic-view.js?v=classic3';
+import {renderGameSummary} from './game-summary.js?v=classic3';
+import {newestClassic} from './classic-document.js?v=classic3';
 const el=id=>document.getElementById(id);
 let id,secret;
 try{id=sessionStorage.getItem('quizroom_player_id');secret=sessionStorage.getItem('quizroom_player_secret');}catch{}
@@ -25,7 +25,7 @@ el('everyoneNext').addEventListener('click',()=>{void control('next');});
 function stop(){stopped=true;clearInterval(timer);if(channel)void supabase.removeChannel(channel);}
 async function classicRequest(name,args){
  let {data,error}=await gameRpc(name,{...args,p_player_id:id,p_player_secret:secret});data=newestClassic(current,data);
- if(error)throw error;current=data;renderEveryoneControls(data,false);renderClassic(data,classicRequest);renderGameSummary(data);renderRanking(data.players,el('ranking'));void refresh();return data;
+ if(error)throw error;el('error').textContent='';current=data;renderEveryoneControls(data,false);renderClassic(data,classicRequest);renderGameSummary(data);renderRanking(data.players,el('ranking'));void refresh();return data;
 }
 async function answer(question,option){
  if(sending||stopped)return;sending=true;el('error').textContent='';

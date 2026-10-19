@@ -1,4 +1,4 @@
-import {isClassic,classicErrors,restoreClassic} from './classic-document.js?v=classic1';
+import {isClassic,classicErrors,restoreClassic} from './classic-document.js?v=classic3';
 export const countQuestions=d=>d.rounds.reduce((n,r)=>n+r.questions.length,0);
 export function validateQuiz(d){
  const errors=[];const add=(text,field,ri,qi)=>errors.push({text,field,ri,qi});

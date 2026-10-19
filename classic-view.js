@@ -1,7 +1,8 @@
-import {rulesText} from './classic-document.js?v=classic1';
+import {prepareClassicMedia} from './classic-preflight.js?v=classic3';
+import {rulesText,stakePolicy} from './classic-document.js?v=classic3';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
-let signature='',latest,offset=0,local=new Map(),requester,pending=false,screen=false;
+let signature='',latest,offset=0,local=new Map(),requester,pending=false,screen=false,preflightReady=true;
 export function resetClassicView(){signature='';local=new Map();latest=null;screen=false;}
 const phaseNames={intro:'Правила тура',media_wait:'Медиа на общем экране',question:'Обсуждение вопроса',question_done:'Обсуждение завершено',answer:'Разбор вопроса',repeat:'Повтор вопросов',submit:'Сдача бланков',review:'Разбор тура',round_results:'Результаты тура',break:'Перерыв',finished:'Итоги игры'};
 export function classicActionLabel(c){return {intro:'Начать тур',question_done:'Следующий вопрос',answer:'Следующий вопрос',review:'Результаты тура',round_results:c.round_no===c.round_count?'Завершить игру':'Продолжить',break:'Продолжить после перерыва',media_wait:'Медиа завершено — запустить обсуждение'}[c.phase]||null;}
@@ -19,18 +20,18 @@ function valueFor(q){
 async function send(name,args){if(pending)return;pending=true;tick();try{return await requester(name,args);}finally{pending=false;tick();}}
 function canEdit(c,q,server){return latest.status==='playing'&&!c.submitted&&!server.locked&&['question','question_done','repeat','submit'].includes(c.phase)&&(c.rules.submission==='round'||c.phase==='question'&&q.number===c.cursor);}
 function makeQuestion(q,c){
- const section=node('section');section.className='classic-card';section.dataset.classicQuestion=q.id;
- section.append(node('h3',`Вопрос ${q.number} · ${q.points} балл.`),node('p',q.text));
+ const rules=q.rules||c.rules;const section=node('section');section.className='classic-card'+(q.animation==='fade'?' classic-fade':'');section.dataset.classicQuestion=q.id;
+ section.append(node('h3',`Вопрос ${q.number} · ${q.points} балл.${q.difficulty?' · '+q.difficulty:''}`),node('p',q.text));
  const media=node('div');renderMedia(q.media,media);
  if(q.media_start!=null){const player=media.querySelector('audio,video');if(player){player.src=q.media.url.split('#')[0]+`#t=${q.media_start},${q.media_end}`;player.addEventListener('timeupdate',()=>{if(player.currentTime>=q.media_end)player.pause();});}}
  section.append(media);
  const form=node('form'),value=valueFor(q);
  if(['single','multiple'].includes(q.kind))q.options.forEach((text,i)=>{const label=node('label');const input=node('input');input.type=q.kind==='single'?'radio':'checkbox';input.name='choice-'+q.id;input.value=i;input.checked=value.response?.choices?.includes(i)||false;label.append(input,document.createTextNode(' '+text));form.append(label);});
  else {const label=node('label','Ваш ответ');const input=node('textarea');input.maxLength=500;input.value=value.response?.text||'';label.append(input);form.append(label);}
- const stakeLabel=node('label','Ставка');const stake=node('select');stake.name='stake';for(const amount of c.rules.stakes){const option=node('option',amount===0?'Без ставки':`Ставка ${amount}: верно +${Number(q.points)+amount}, ошибка −${amount}`);option.value=amount;option.selected=Number(amount)===Number(value.stake||0);stake.append(option);}stakeLabel.append(stake);form.append(stakeLabel);
+ const stakeLabel=node('label','Ставка');const stake=node('select');stake.name='stake';for(const amount of rules.stakes){const policy=stakePolicy(rules,amount);const option=node('option',`Ставка ${amount}: верно ${Number(q.points)+policy.correct_bonus}, ошибка ${policy.wrong}`);option.value=amount;option.selected=Number(amount)===Number(value.stake||0);stake.append(option);}stakeLabel.append(stake);form.append(stakeLabel);
  const status=node('p');status.dataset.draftStatus=q.id;form.append(status);
  form.addEventListener('input',()=>{const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value.trim()};value.response=response.choices?.length===0||response.text===''?null:response;value.stake=value.response?Number(stake.value):0;value.dirty=true;remember(q.id,value);status.textContent='Не отправлено. Сохраните ответ.';});
- const save=node('button',c.rules.submission==='round'?'Сохранить ответ':'Отправить окончательный ответ');save.type='submit';form.append(save);
+ const save=node('button',rules.submission==='round'?'Сохранить ответ':'Отправить окончательный ответ');save.type='submit';form.append(save);
  form.addEventListener('submit',async event=>{event.preventDefault();if(!canEdit(latest.classic,q,fromServer(q.id)))return;save.disabled=true;
   try{const result=await send('classic_save_response',{p_question_id:q.id,p_response:value.response,p_stake:value.response?value.stake:0,p_revision:value.revision});if(result){const accepted=result.classic.drafts.find(d=>d.question_id===q.id);Object.assign(value,accepted,{dirty:false});remember(q.id,value);renderClassic(result,requester);status.textContent='Сохранено на сервере';}}
   catch(error){status.textContent=error.message||'Не удалось сохранить. Проверьте связь.';}finally{tick();}
@@ -46,12 +47,12 @@ export function renderClassic(data,request){
  if(data.status==='waiting'){root.replaceChildren(node('p','Все участники играют. Первый вошедший запускает игру, затем на экране появятся правила первого тура.'));signature='';return;}
  const c=data.classic;
  const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
- if(signature!==key){signature=key;root.replaceChildren();root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
+ if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
   const timer=node('p');timer.id='classicTimer';timer.setAttribute('role','timer');root.append(timer);
   const rules=node('details');rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),node('p',rulesText(c.rules)));root.append(rules);
   const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
   if(c.phase==='media_wait')root.append(node('p','Воспроизведите фрагмент на общем экране. Организатор запустит обсуждение после окончания фрагмента; при ошибке загрузки время на ответ не расходуется.'));
-  if(c.submitted)root.append(node('p','Бланк сдан. Ответы откроются после закрытия приёма у всех.'));
+  if(c.submitted)root.append(node('p','Бланк сдан. Ответы и ставки зафиксированы.'));
   if(c.phase==='intro')root.append(node('p','Все готовы? Организатор начинает тур.'));
   else if(!['break','round_results'].includes(c.phase)){
    const qs=c.rules.submission==='question'&&['question','question_done','answer','media_wait'].includes(c.phase)?c.questions.filter(q=>q.number===c.cursor):c.questions;
@@ -67,6 +68,7 @@ export function renderClassic(data,request){
    });root.append(submit);
   }
   const label=classicActionLabel(c);if(data.can_control&&label){const next=node('button',label);next.type='button';next.dataset.classicControl='true';next.addEventListener('click',async()=>{next.disabled=true;try{await send('classic_action',{p_action:c.phase==='media_wait'?'media_ready':'advance',p_version:c.version});}catch(error){root.append(node('p',error.message));}finally{tick();}});root.append(next);}
+  if(c.phase==='intro')prepareClassicMedia(root,c.preflight,value=>{preflightReady=value;tick();});
  }
  for(const q of c.questions){const status=root.querySelector(`[data-draft-status="${q.id}"]`);if(status){const value=valueFor(q),server=fromServer(q.id);status.textContent=value.dirty?(value.revision!==server.revision?'Серверный ответ изменился. Загрузите его перед дальнейшей правкой.':'Не отправлено. Сохраните ответ.'):server.locked?'Ответ зафиксирован':server.revision?'Сохранено на сервере':'Ответ ещё не сохранён';root.querySelector(`[data-restore="${q.id}"]`).hidden=!value.dirty&&value.revision===server.revision;}}
  tick();
@@ -75,7 +77,7 @@ function tick(){
  if(!latest||latest.status==='waiting')return;const c=latest.classic;const left=c.deadline?Math.max(0,Math.ceil((Date.parse(c.deadline)-Date.now()-offset)/1000)):null;
  const timer=document.getElementById('classicTimer');if(timer)timer.textContent=left==null?'':left?`Осталось: ${left} сек.`:c.phase==='media_wait'?'Фрагмент завершён. Организатор запускает обсуждение.':'Время этапа вышло. Обновляем состояние…';
  for(const q of c.questions){const card=document.querySelector(`[data-classic-question="${q.id}"]`);if(!card)continue;const blocked=!canEdit(c,q,fromServer(q.id))||pending||(left===0&&['question','submit','repeat'].includes(c.phase));for(const input of card.querySelectorAll('input,textarea,select,button[type="submit"]'))input.disabled=blocked;}
- for(const button of document.querySelectorAll('[data-classic-control]'))button.disabled=pending||c.phase==='media_wait'&&left>0;
+ for(const button of document.querySelectorAll('[data-classic-control]'))button.disabled=pending||c.phase==='intro'&&!preflightReady||c.phase==='media_wait'&&left>0;
  for(const button of document.querySelectorAll('[data-classic-submit]'))button.disabled=pending||left===0;
 }
 setInterval(tick,250);

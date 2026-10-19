@@ -5,6 +5,7 @@ begin
  if has_function_privilege('anon','public.classic_snapshot(uuid,uuid)','execute') or has_function_privilege('anon','public.classic_freeze(uuid,uuid)','execute') or has_function_privilege('anon','public.get_quiz_player_before_classic(uuid,uuid)','execute') then raise exception 'FAIL helper exposed';end if;
  if has_table_privilege('anon','public.classic_drafts','SELECT') then raise exception 'FAIL drafts exposed';end if;
  doc:='{"schema_version":2,"format":"classic","title":"Classic transaction test","price":0,"score_timing":"round","reveal_timing":"round","tie_break":"reverse_rounds","rounds":[{"id":"r1","title":"Бланк","rules":{"submission":"round","repeat":true,"repeat_seconds":5,"submit_seconds":5,"transition":"manual","score_timing":"round","reveal_timing":"round","stakes":[0,1,2],"break_seconds":0,"break_manual":true,"media_clock":"with_question","text":"Проверка","difficulty":"Смешанный"},"questions":[{"id":"q1","text":"Дерево?","kind":"text","accepted":["Ёлка"],"points":1,"duration":5},{"id":"q2","text":"Выбор","kind":"single","options":["Да","Нет"],"correct":[0],"points":1,"duration":5}]},{"id":"r2","title":"Финал","rules":{"submission":"question","repeat":false,"repeat_seconds":5,"submit_seconds":5,"transition":"auto","score_timing":"round","reveal_timing":"quiz","stakes":[0,1],"break_seconds":0,"break_manual":false,"media_clock":"with_question","text":"","difficulty":"Сложный"},"questions":[{"id":"q3","text":"Дважды два?","kind":"text","accepted":["4"],"points":2,"duration":5}]}]}'::jsonb;
+ doc:=jsonb_set(jsonb_set(doc,'{rounds,0,rules,theme}','"Скрытая тема"'),'{rounds,0,rules,theme_hidden}','true');
  perform public.validate_quiz_document(doc);
  begin perform public.validate_quiz_document(jsonb_set(doc,'{rounds,0,rules,score_timing}','"question"'));raise exception 'FAIL invalid blank policy';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
  begin perform public.validate_quiz_document(jsonb_set(doc,'{rounds,0,rules,stakes}','[0,9]'));raise exception 'FAIL invalid stakes';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
@@ -24,6 +25,7 @@ begin
  begin perform public.classic_action(p2.player_id,p2.player_secret,'start',0);raise exception 'FAIL non-owner';exception when insufficient_privilege then null;end;
  begin perform public.control_quiz_everyone(p1.player_id,p1.player_secret,'start');raise exception 'FAIL old control bypass';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
  s:=public.classic_action(p1.player_id,p1.player_secret,'start',0);
+ if s->'classic'->'rules' ? 'theme' then raise exception 'FAIL hidden theme exposed';end if;
  if s->'classic'->>'phase'<>'intro' or jsonb_array_length(s->'classic'->'questions')<>0 then raise exception 'FAIL intro';end if;
  v:=(s->'classic'->>'version')::int;s:=public.classic_action(p1.player_id,p1.player_secret,'advance',v);
  q1:=(s->'classic'->'questions'->0->>'id')::uuid;
@@ -33,7 +35,7 @@ begin
  s:=public.classic_save_response(p1.player_id,p1.player_secret,q1,'{"text":"ель"}',0,0);
  begin perform public.classic_save_response(p1.player_id,p1.player_secret,q1,'{"text":"4"}',0,0);raise exception 'FAIL stale overwrite';exception when serialization_failure then null;end;
  s:=public.classic_save_response(p1.player_id,p1.player_secret,q1,'{"text":"  елка  "}',1,1);
- s:=public.classic_save_response(p2.player_id,p2.player_secret,q1,'{"text":"Ёлка"}',0,0);
+ s:=public.classic_save_response(p2.player_id,p2.player_secret,q1,'{"text":"не дерево"}',0,0);
  if s->'classic'->>'phase'<>'question' then raise exception 'FAIL early close from drafts';end if;
  begin perform public.classic_submit_round(p1.player_id,p1.player_secret,1);raise exception 'FAIL submit before all shown';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
  update public.rooms set classic_state=jsonb_set(classic_state,'{deadline}',to_jsonb(clock_timestamp()-interval '1 second')) where id=rid;
@@ -49,7 +51,7 @@ begin
  begin perform public.classic_save_response(p1.player_id,p1.player_secret,q1,'{"text":"x"}',0,2);raise exception 'FAIL edit submitted';exception when raise_exception then if SQLERRM like 'FAIL%' then raise;end if;end;
  s:=public.classic_submit_round(p2.player_id,p2.player_secret,1);
  if s->'classic'->>'phase'<>'review' or (select sum(points) from public.classic_awards where player_id=p1.player_id)<>0 then raise exception 'FAIL round review / stakes';end if;
- if (select sum(points) from public.classic_awards where player_id=p2.player_id)<>1 then raise exception 'FAIL text normalization';end if;
+ if (select sum(points) from public.classic_awards where player_id=p2.player_id)<>0 then raise exception 'FAIL incorrect text score';end if;
  s:=public.classic_action(p1.player_id,p1.player_secret,'advance',(s->'classic'->>'version')::int);
  s:=public.classic_action(p1.player_id,p1.player_secret,'advance',(s->'classic'->>'version')::int);
  if s->'classic'->>'phase'<>'break' then raise exception 'FAIL break';end if;
@@ -62,6 +64,7 @@ begin
  s:=public.classic_action(p1.player_id,p1.player_secret,'advance',(s->'classic'->>'version')::int);
  s:=public.classic_action(p1.player_id,p1.player_secret,'advance',(s->'classic'->>'version')::int);
  if s->>'status'<>'finished' or (s->'results'->'players'->0->>'score')::numeric<>2 then raise exception 'FAIL final scores';end if;
+ if (s->'results'->'players'->1->>'score')::numeric<>-1 then raise exception 'FAIL negative final total';end if;
  if jsonb_array_length(s->'classic'->'questions')<>3 then raise exception 'FAIL final review';end if;
  before_report:=s->'results';s:=public.get_quiz_game_player(p2.player_id,p2.player_secret);
  if s->'results' is distinct from before_report or (s->'classic'->'awards'->2->>'points')::numeric>0 then raise exception 'FAIL recovery / penalty';end if;
@@ -70,6 +73,11 @@ begin
  update public.classic_awards set points=case when round_no=1 then 0 else 4 end where player_id=p2.player_id;
  t:=public.classic_standings(rid);
  if t->0->>'player_id'<>p2.player_id::text or (t->1->>'rank')::int<>2 then raise exception 'FAIL reverse round tie break';end if;
+ -- A different payout table changes scoring without changing the engine.
+ update public.rooms set classic_state=jsonb_set(classic_state,'{round}','0'),admin_document=jsonb_set(admin_document,'{rounds,0,rules,stake_policy}','[{"stake":0,"correct_bonus":0,"wrong":0},{"stake":1,"correct_bonus":5,"wrong":-4},{"stake":2,"correct_bonus":8,"wrong":-7}]') where id=rid;
+ delete from public.classic_awards where room_id=rid;
+ perform public.classic_freeze(rid);
+ if (select sum(points) from public.classic_awards where player_id=p1.player_id)<>-1 then raise exception 'FAIL custom payout table';end if;
  if s::text like '%player_token%' or s::text like '%host_token%' then raise exception 'FAIL token leak';end if;
 end $$;
 rollback;

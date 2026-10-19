@@ -1,0 +1,16 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import {pathToFileURL} from 'node:url';
+const root=process.cwd();const load=p=>import(pathToFileURL(root+'/'+p));
+const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
+const {document,window}=parseHTML(await readFile('admin.html','utf8'));Object.assign(globalThis,{document,window,localStorage:{getItem:()=>null,setItem:()=>{}},sessionStorage:{getItem:()=>null,setItem:()=>{}}});
+window.HTMLElement.prototype.scrollIntoView=function(){};
+Object.defineProperty(window.HTMLSelectElement.prototype,'value',{get(){return this.querySelector('option[selected]')?.value||this.querySelector('option')?.value||'';},set(v){for(const o of this.querySelectorAll('option')){if(String(o.value)===String(v))o.setAttribute('selected','');else o.removeAttribute('selected');}}});
+const {validateQuiz,importQuiz,countQuestions}=await load('studio-document.js');const {isClassic,classicTemplate,roundRules,rulesText}=await load('classic-document.js');const {editRoundRules}=await load('classic-editor.js');const {renderMedia}=await load('quiz-media.js');
+const src=(await readFile('admin.js','utf8')).replace(/^import .*;\n/gm,'');
+const api={auth:{getSession:async()=>({data:{session:null}})}};const scope=new Function('validateQuiz','importQuiz','countQuestions','isClassic','classicTemplate','roundRules','rulesText','editRoundRules','downloadFile','api','renderMedia',src+'\nreturn {open,documentValue};')(validateQuiz,importQuiz,countQuestions,isClassic,classicTemplate,roundRules,rulesText,editRoundRules,()=>{},api,renderMedia);
+document.getElementById('autoSave').checked=false;
+await scope.open(null);assert.match(document.getElementById('quizFormatLabel').textContent,/Простой/);assert.equal(document.querySelectorAll('.rules-preview').length,0);assert.equal(document.getElementById('scoreTiming').closest('label').hidden,false);
+await scope.open(null,false,classicTemplate(true));assert.equal(document.querySelectorAll('.rules-preview').length,7);assert.equal(document.querySelectorAll('.question-fold').length,39);assert.equal(document.getElementById('scoreTiming').closest('label').hidden,true);assert.equal(scope.documentValue().tie_break,'reverse_rounds');
+const copy=[...document.querySelectorAll('#roundEditor button')].find(e=>e.textContent==='Копировать вопрос');copy.click();const doc=scope.documentValue();assert.equal(countQuestions(doc),40);assert.equal(new Set(doc.rounds.flatMap(r=>r.questions.map(q=>q.id))).size,40);
+console.log('PASS: actual admin module renders both formats, seven rules/39 questions, hidden global timing, preserved tie policy, cloning generates unique IDs');process.exit(0);
