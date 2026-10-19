@@ -1,6 +1,8 @@
+import {isClassic,classicErrors,restoreClassic} from './classic-document.js?v=classic1';
 export const countQuestions=d=>d.rounds.reduce((n,r)=>n+r.questions.length,0);
 export function validateQuiz(d){
  const errors=[];const add=(text,field,ri,qi)=>errors.push({text,field,ri,qi});
+ if(d.format&&d.format!=='simple'&&!isClassic(d))add('Неизвестный формат квиза','quizTitle');
  const length=(s,min,max)=>typeof s==='string'&&s.trim().length>=min&&s.trim().length<=max;
  const money=(v,max)=>/^\d+(\.\d{1,2})?$/.test(String(v))&&Number(v)<=max;
  const media=(m,cover=false)=>m==null||(typeof m==='object'&&(cover?m.type==='image':['image','audio','video'].includes(m.type))&&typeof m.url==='string'&&/^https:\/\/[^\s]+$/.test(m.url)&&m.url.length<=2000&&(!cover||String(m.alt||'').length<=200));
@@ -32,11 +34,12 @@ export function validateQuiz(d){
    if(String(q.explanation||'').length>2000)err('пояснение до 2000 символов','explanation');
    for(const key of ['media','answer_media'])if(!media(q[key]))err('медиа должно иметь тип и HTTPS-ссылку',key);
   });
- });return errors;
+ });return errors.concat(classicErrors(d));
 }
 export function importQuiz(value){
- if(value?.format!=='quizroom-quiz'||value.version!==1)throw Error('Выберите JSON-копию квиза, сохранённую в конструкторе QuizRoom.');
+ if(value?.format!=='quizroom-quiz'||![1,2].includes(value.version))throw Error('Выберите JSON-копию квиза, сохранённую в конструкторе QuizRoom.');
  const d=value.document;
+ if(value.version===1&&isClassic(d))throw Error('Для многораундовой игры нужна JSON-копия версии 2.');
  if(!d||typeof d!=='object'||Array.isArray(d)||!Array.isArray(d.rounds)||d.rounds.length>20)throw Error('Некорректная структура туров.');
  // An imported backup never carries record ids, server revisions or access tokens.
  const text=(v,max)=>{if(v!=null&&(typeof v!=='string'||v.length>max))throw Error('В копии слишком длинное или некорректное текстовое поле.');return v||'';};
@@ -55,5 +58,6 @@ export function importQuiz(value){
  if(countQuestions(result)>50)throw Error('В квизе может быть не больше 50 вопросов');
  if(!['number','string'].includes(typeof result.price)||String(result.price).length>30||!['question','round','quiz'].includes(result.score_timing)||!['question','round','quiz'].includes(result.reveal_timing))throw Error('Некорректная цена или правила квиза');
  for(const r of result.rounds)for(const q of r.questions){if(!['single','multiple'].includes(q.kind)){q.options=[];q.correct=[];}if(q.kind!=='text')q.accepted=[];}
- return result;
+ if(value.version===2&&!isClassic(d))throw Error('Неизвестный формат многораундовой игры.');
+ return restoreClassic(d,result);
 }

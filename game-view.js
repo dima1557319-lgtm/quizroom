@@ -1,4 +1,4 @@
-import {renderGameSummary} from './game-summary.js?v=everyone1';
+import {renderGameSummary} from './game-summary.js?v=classic1';
 import {renderRichGame} from './rich-game.js?v=everyone1';
 export const formatPoints = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2}).format(Number(value));
 const el = id => document.getElementById(id);
@@ -58,7 +58,7 @@ export function renderRanking(players, target) {
     if (p.score !== lastScore) rank = i + 1;
     lastScore = p.score;
     const li = document.createElement('li');
-    li.textContent = `${rank}. ${p.player_name} — баллы: ${formatPoints(p.score)}`;
+    li.textContent = `${p.rank??rank}. ${p.player_name} — баллы: ${formatPoints(p.score)}`;
     return li;
   }));
 }

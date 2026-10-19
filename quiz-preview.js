@@ -2,7 +2,9 @@ import {renderRichGame} from './rich-game.js?v=daily2';
 let latest;function renderGame(data,answer){latest=data;renderRichGame(data,answer);tick();}
 function tick(){if(!latest)return;const seconds=Math.max(0,Math.ceil((Date.parse(latest.question.deadline)-Date.now())/1000));document.getElementById('gameTimer').textContent=latest.phase==='question'?`Осталось: ${seconds} сек.`:'';for(const control of document.querySelectorAll('[data-rich-answer]'))control.disabled=latest.phase!=='question'||latest.my_response!=null||seconds===0;}
 setInterval(tick,250);
-import {validateQuiz,importQuiz} from './studio-document.js?v=daily2';
+import {validateQuiz,importQuiz} from './studio-document.js?v=classic1';
+import {isClassic} from './classic-document.js?v=classic1';
+import {startClassicPreview} from './classic-preview.js?v=classic1';
 const $=id=>document.getElementById(id);let doc,questions=[],index=0,phase='question',started=Date.now(),responses=[],scores=[],graded=[];
 function points(q,response){
  if(q.kind==='manual')return 0;
@@ -25,7 +27,7 @@ function draw(){
  $('manualPanel').hidden=finished||q.kind!=='manual'||!responses[index]||graded[index];$('manualScore').max=q.points;
 }
 function start(){index=0;phase='question';started=Date.now();responses=[];scores=[];graded=[];$('previewError').textContent='';draw();}
-window.addEventListener('message',event=>{if(event.source!==parent||event.origin!==location.origin||event.data?.type!=='quizroom-admin-preview')return;try{doc=importQuiz({format:'quizroom-quiz',version:1,document:event.data.document});if(validateQuiz(doc).length)throw Error('Вернитесь в конструктор и исправьте ошибки квиза');questions=doc.rounds.flatMap((r,i)=>r.questions.map(q=>({...q,round:r.title,round_number:i+1})));start();}catch(e){$('previewError').textContent=e.message;}});
+window.addEventListener('message',event=>{if(event.source!==parent||event.origin!==location.origin||event.data?.type!=='quizroom-admin-preview')return;try{doc=importQuiz({format:'quizroom-quiz',version:isClassic(event.data.document)?2:1,document:event.data.document});if(validateQuiz(doc).length)throw Error('Вернитесь в конструктор и исправьте ошибки квиза');if(isClassic(doc)){startClassicPreview(doc);return;}questions=doc.rounds.flatMap((r,i)=>r.questions.map(q=>({...q,round:r.title,round_number:i+1})));start();}catch(e){$('previewError').textContent=e.message;}});
 $('previewReveal').onclick=()=>{phase='reveal';draw();};
 $('previewNext').onclick=()=>{if(questions[index].kind==='manual'&&responses[index]&&!graded[index]){$('previewError').textContent='Сначала примените пробную ручную оценку.';return;}$('previewError').textContent='';if(index===questions.length-1)phase='finished';else{index++;phase='question';started=Date.now();}draw();};
 $('previewRestart').onclick=start;

@@ -1,8 +1,11 @@
 import {gameRpc} from './game-rpc.js?v=play2';
 import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js';
-import { renderGame, renderRanking } from './game-view.js?v=everyone1';
-import { renderEveryoneControls } from './player-controls.js?v=everyone1';
+import { renderGame, renderRanking } from './game-view.js?v=classic1';
+import { renderEveryoneControls } from './player-controls.js?v=classic1';
+import {renderClassic} from './classic-view.js?v=classic1';
+import {renderGameSummary} from './game-summary.js?v=classic1';
+import {newestClassic} from './classic-document.js?v=classic1';
 const el=id=>document.getElementById(id);
 let id,secret;
 try{id=sessionStorage.getItem('quizroom_player_id');secret=sessionStorage.getItem('quizroom_player_secret');}catch{}
@@ -12,7 +15,7 @@ async function control(action){
  if(controlling||!current?.can_control||stopped)return;
  controlling=true;renderEveryoneControls(current,true);el('error').textContent='';
  try{
-  const {error}=await gameRpc('control_quiz_everyone',{p_player_id:id,p_player_secret:secret,p_action:action,p_question_id:current.question?.id||null});
+  const {error}=await gameRpc(current.format==='classic'?'classic_action':'control_quiz_everyone',current.format==='classic'?{p_player_id:id,p_player_secret:secret,p_action:action,p_version:current.classic.version}:{p_player_id:id,p_player_secret:secret,p_action:action,p_question_id:current.question?.id||null});
   if(error)throw error;
  }catch(e){el('error').textContent=e.message||'Не удалось выполнить действие. Обновляем состояние игры.';}
  finally{controlling=false;void refresh();}
@@ -20,6 +23,10 @@ async function control(action){
 el('everyoneStart').addEventListener('click',()=>{void control('start');});
 el('everyoneNext').addEventListener('click',()=>{void control('next');});
 function stop(){stopped=true;clearInterval(timer);if(channel)void supabase.removeChannel(channel);}
+async function classicRequest(name,args){
+ let {data,error}=await gameRpc(name,{...args,p_player_id:id,p_player_secret:secret});data=newestClassic(current,data);
+ if(error)throw error;current=data;renderEveryoneControls(data,false);renderClassic(data,classicRequest);renderGameSummary(data);renderRanking(data.players,el('ranking'));void refresh();return data;
+}
 async function answer(question,option){
  if(sending||stopped)return;sending=true;el('error').textContent='';
  for(const b of document.querySelectorAll('[data-answer],[data-rich-answer]')){b.dataset.sending='true';b.disabled=true;}
@@ -33,13 +40,15 @@ async function answer(question,option){
 async function refresh(){
  if(stopped||!id||!secret)return;if(busy){again=true;return;}busy=true;
  try{
-  const {data,error}=await gameRpc('get_quiz_game_player',{p_player_id:id,p_player_secret:secret});if(error)throw error;
+  let {data,error}=await gameRpc('get_quiz_game_player',{p_player_id:id,p_player_secret:secret});if(error)throw error;data=newestClassic(current,data);
   if(stopped)return;
   current=data;renderEveryoneControls(data,controlling);
   const me=data.players.find(p=>p.player_id===id);
   el('identity').textContent=`${me?.player_name||'Игрок'} · Комната ${data.room_code}`;
   el('status').textContent=data.status==='waiting'?'Вы в игре! Ожидаем начала.':data.status==='finished'?'Игра завершена':data.phase==='reveal'?'Вопрос закрыт':data.question?.kind==='multiple'?'Выберите один или несколько вариантов': ['text','manual'].includes(data.question?.kind)?'Введите текст ответа':'Выберите один вариант ответа';
-  renderGame(data,answer);renderRanking(data.players,el('ranking'));el('rankingTitle').hidden=data.status==='waiting';
+  if(data.format==='classic'){el('game').hidden=true;renderClassic(data,classicRequest);renderGameSummary(data);el('status').textContent=data.status==='waiting'?'Ожидаем игроков':data.status==='finished'?'Игра завершена':'Многораундовая игра';}
+  else{const classic=document.getElementById('classicGame');if(classic)classic.hidden=true;renderGame(data,answer);}
+  renderRanking(data.players,el('ranking'));el('rankingTitle').hidden=data.status==='waiting';
   el('connection').textContent=connected?'Обновление в реальном времени подключено':'Резервное обновление каждые 2 секунды';
   if(!channel)channel=supabase.channel(data.realtime_topic,{config:{private:false}}).on('broadcast',{event:'lobby_changed'},()=>{void refresh();}).subscribe(s=>{connected=s==='SUBSCRIBED';if(connected)void refresh();});
  }catch(e){

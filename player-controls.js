@@ -21,4 +21,8 @@ export function renderEveryoneControls(data,pending=false){
  el('everyoneNext').disabled=pending;
  el('everyoneNext').textContent=data.question?.number===data.total_questions?'Показать итоги':
   data.question?.round_end?'Начать следующий тур':'Следующий вопрос';
+ if(data.format==='classic'){
+  el('everyoneNext').hidden=true;
+  el('organizerStatus').textContent=data.can_control?'Вы организатор и тоже играете. Правила каждого тура показаны перед началом.':`Управляет: ${data.controller_name||'ожидаем первого игрока'}. Передача управления — после 30 секунд без связи.`;
+ }
 }
