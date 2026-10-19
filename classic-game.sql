@@ -261,7 +261,8 @@ begin
   elsif ph='round_results' then
    if (r.classic_state->>'round')::int+1=jsonb_array_length(r.admin_document->'rounds') then
     update public.classic_awards set visible=true where room_id=r.id;
-    update public.players p set score=coalesce((select sum(a.points) from public.classic_awards a where a.player_id=p.id),0) where p.room_id=r.id;
+    -- Signed classic totals are read from classic_awards. Keep the legacy
+    -- players.score nonnegative constraint and simple scoring unchanged.
     standings:=public.classic_standings(r.id);
     update public.rooms set status='finished',finished_at=clock_timestamp(),finish_reason='completed',classic_state=classic_state||jsonb_build_object('phase','finished','version',(classic_state->>'version')::int+1),game_result=jsonb_build_object('version',2,'quiz_title',r.admin_document->>'title','room_code',r.code,'finished_at',clock_timestamp(),'finish_reason','completed','tie_break',r.admin_document->>'tie_break','players',standings,'question_count',(select count(*) from public.questions where room_id=r.id)) where id=r.id;
    elsif (s->>'break_manual')::boolean or (s->>'break_seconds')::int>0 then perform public.classic_set_phase(r.id,'break',case when (s->>'break_manual')::boolean then null else (s->>'break_seconds')::int end);

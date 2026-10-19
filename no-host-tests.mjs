@@ -22,7 +22,7 @@ await db.exec(`
  create schema realtime;
  create function realtime.send(jsonb,text,text,boolean) returns void language sql as 'select';
  create table rooms(id uuid primary key default gen_random_uuid(),code text unique not null,host_token uuid not null default gen_random_uuid(),status text not null default 'waiting',max_players int not null default 20,current_question int not null default 0,lobby_topic uuid not null default gen_random_uuid());
- create table players(id uuid primary key default gen_random_uuid(),room_id uuid references rooms(id),name text,player_token uuid not null default gen_random_uuid(),joined_at timestamptz not null default clock_timestamp(),score numeric not null default 0);
+ create table players(id uuid primary key default gen_random_uuid(),room_id uuid references rooms(id),name text,player_token uuid not null default gen_random_uuid(),joined_at timestamptz not null default clock_timestamp(),score numeric not null default 0 check(score>=0));
  create table questions(id uuid primary key default gen_random_uuid(),room_id uuid references rooms(id),question_number int,question_text text,options jsonb,correct_option int,duration int,unique(room_id,question_number));
  create table answers(id uuid primary key default gen_random_uuid(),question_id uuid references questions(id),player_id uuid references players(id),selected_option int,points_awarded numeric,answered_at timestamptz default clock_timestamp(),unique(question_id,player_id));
  create function public.create_quiz_room() returns table(room_code text,host_secret uuid) language plpgsql set search_path='public' as $$begin return query insert into rooms(code) values(lpad((select count(*)+1 from rooms)::text,6,'0')) returning code,host_token;end$$;
