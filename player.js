@@ -9,7 +9,7 @@ try{id=sessionStorage.getItem('quizroom_player_id');secret=sessionStorage.getIte
 let channel,timer,busy=false,again=false,stopped=false,sending=false,connected=false;
 let current,controlling=false;
 async function control(action){
- if(controlling||!current?.can_control||stopped||busy)return;
+ if(controlling||!current?.can_control||stopped)return;
  controlling=true;renderEveryoneControls(current,true);el('error').textContent='';
  try{
   const {error}=await gameRpc('control_quiz_everyone',{p_player_id:id,p_player_secret:secret,p_action:action,p_question_id:current.question?.id||null});
