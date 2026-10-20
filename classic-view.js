@@ -21,6 +21,7 @@ async function send(name,args){if(pending)return;pending=true;tick();try{return 
 function canEdit(c,q,server){return latest.status==='playing'&&!c.submitted&&!server.locked&&['question','question_done','repeat','submit'].includes(c.phase)&&(c.rules.submission==='round'||c.phase==='question'&&q.number===c.cursor);}
 function makeQuestion(q,c){
  const rules=q.rules||c.rules;const section=node('section');section.className='classic-card'+(q.animation==='fade'?' classic-fade':'');section.dataset.classicQuestion=q.id;
+ const countdown=node('div');countdown.className='classic-card-countdown';countdown.setAttribute('role','timer');countdown.dataset.questionTimer=q.id;section.append(countdown);
  const meta=node('div');meta.className='classic-card-meta';
  const kinds={single:'Один ответ',multiple:'Несколько ответов',text:'Текстовый ответ',manual:'Проверяет ведущий'};
  for(const text of [`Вопрос ${q.number}`,kinds[q.kind]||q.kind,`★ ${q.points} балл.`,...(q.duration!=null?[`⏱ ${q.duration} сек.`]:[]),...(q.difficulty?[q.difficulty]:[])])meta.append(node('span',text));
@@ -79,7 +80,21 @@ export function renderClassic(data,request){
 function tick(){
  if(!latest||latest.status==='waiting')return;const c=latest.classic;const left=c.deadline?Math.max(0,Math.ceil((Date.parse(c.deadline)-Date.now()-offset)/1000)):null;
  const timer=document.getElementById('classicTimer');if(timer)timer.textContent=left==null?'':left?`Осталось: ${left} сек.`:c.phase==='media_wait'?'Фрагмент завершён. Организатор запускает обсуждение.':'Время этапа вышло. Обновляем состояние…';
- for(const q of c.questions){const card=document.querySelector(`[data-classic-question="${q.id}"]`);if(!card)continue;const blocked=!canEdit(c,q,fromServer(q.id))||pending||(left===0&&['question','submit','repeat'].includes(c.phase));for(const input of card.querySelectorAll('input,textarea,select,button[type="submit"]'))input.disabled=blocked;}
+ for(const q of c.questions){const card=document.querySelector(`[data-classic-question="${q.id}"]`);if(!card)continue;
+  const countdown=card.querySelector('[data-question-timer]');
+  if(countdown){
+   const seconds=left==null?'':`${left} сек.`;
+   let label='Обсуждение завершено';
+   if(c.phase==='question'&&q.number===c.cursor)label=left===0?'Время на ответ вышло':`⏱ На ответ: ${seconds}`;
+   else if(c.phase==='media_wait'&&q.number===c.cursor)label=left===0?'Медиа завершено · ожидаем обсуждения':`⏱ Медиа: ${seconds}`;
+   else if(c.phase==='repeat')label=left===0?'Повтор завершён':`⏱ Повтор вопросов: ${seconds}`;
+   else if(c.phase==='submit')label=left===0?'Время сдачи вышло':`⏱ До сдачи бланка: ${seconds}`;
+   else if(['answer','review','finished'].includes(c.phase))label='Разбор ответа';
+   if(c.submitted)label='Бланк сдан';
+   if(countdown.textContent!==label)countdown.textContent=label;
+   countdown.classList.toggle('is-urgent',left!=null&&left<=10&&left>0&&((c.phase==='question'||c.phase==='media_wait')&&q.number===c.cursor||['repeat','submit'].includes(c.phase))&&!c.submitted);
+  }
+  const blocked=!canEdit(c,q,fromServer(q.id))||pending||(left===0&&['question','submit','repeat'].includes(c.phase));for(const input of card.querySelectorAll('input,textarea,select,button[type="submit"]'))input.disabled=blocked;}
  for(const button of document.querySelectorAll('[data-classic-control]'))button.disabled=pending||c.phase==='intro'&&!preflightReady||c.phase==='media_wait'&&left>0;
  for(const button of document.querySelectorAll('[data-classic-submit]'))button.disabled=pending||left===0;
 }
