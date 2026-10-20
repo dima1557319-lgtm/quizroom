@@ -44,10 +44,10 @@ function makeQuestion(q,c){
 export function renderClassic(data,request){
  latest=data;requester=request;offset=Date.parse(data.server_now)-Date.now();
  let root=document.getElementById('classicGame');if(!root){root=node('section');root.id='classicGame';document.getElementById('game').after(root);}root.hidden=false;
- if(data.status==='waiting'){root.replaceChildren(node('p','Все участники играют. Первый вошедший запускает игру, затем на экране появятся правила первого тура.'));signature='';return;}
+ if(data.status==='waiting'){const waitingKey=JSON.stringify(['waiting',data.room_code,data.quiz_cover?.url]);if(signature!==waitingKey){signature=waitingKey;root.replaceChildren();const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover,node('p','Все участники играют. Первый вошедший запускает игру, затем на экране появятся правила первого тура.'));}return;}
  const c=data.classic;
  const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
- if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
+ if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();if(c.phase==='intro'&&c.round_no===1&&data.quiz_cover){const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover);}root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
   const timer=node('p');timer.id='classicTimer';timer.setAttribute('role','timer');root.append(timer);
   const rules=node('details');rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),node('p',rulesText(c.rules)));root.append(rules);
   const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
