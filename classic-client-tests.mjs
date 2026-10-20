@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic3';
 import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
 import {ClassicPreview} from './classic-preview.js?v=classic3';
-import {renderClassic,resetClassicView} from './classic-view.js?v=classic4';
+import {renderClassic,resetClassicView} from './classic-view.js?v=cards1';
 const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
 for(const name of ['admin.js','classic-document.js','classic-editor.js','classic-view.js','classic-preview.js','player.js','player-controls.js','game-summary.js','game-files.js','quiz-preview.js']){const result=spawnSync(process.execPath,['--check',name],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);}
 const template=classicTemplate();assert.equal(template.rounds.length,7);assert.equal(template.rounds.flatMap(r=>r.questions).length,39);assert.equal(classicErrors(template).length,0);assert.ok(validateQuiz(template).length>0,'Empty questions must block publish');
@@ -30,4 +30,12 @@ const custom=structuredClone(doc);custom.rounds[0].rules.stake_policy=[{stake:0,
 const customModel=new ClassicPreview(custom);customModel.request('classic_action',{p_action:'advance',p_version:1});customModel.request('classic_save_response',{p_question_id:'test-q',p_response:{text:'елка'},p_stake:2,p_revision:0});customModel.freeze();assert.equal(customModel.awards[0].points,9);
 const mediaDoc=structuredClone(doc);mediaDoc.rounds[0].rules.theme='Секрет';mediaDoc.rounds[0].rules.theme_hidden=true;mediaDoc.rounds[0].questions[0].media={type:'audio',url:'https://example.com/file.mp3'};const mediaModel=new ClassicPreview(mediaDoc);resetClassicView();renderClassic(mediaModel.snapshot(),async()=>{});assert.equal(document.querySelector('[data-classic-control]').disabled,true);assert.ok(!document.querySelector('#classicGame').textContent.includes('Секрет'));document.querySelector('#classicGame audio').dispatchEvent(new window.Event('loadedmetadata'));assert.equal(document.querySelector('[data-classic-control]').disabled,false);
 const lobby={...mediaModel.snapshot(),status:'waiting',quiz_cover:{type:'image',url:'https://example.com/cover.jpg',alt:'Обложка'}};renderClassic(lobby,async()=>{});const cover=document.querySelector('#classicGame img');assert.equal(cover.alt,'Обложка');renderClassic(lobby,async()=>{});assert.equal(document.querySelector('#classicGame img'),cover,'Lobby polling preserves the cover element');
+const choiceDoc=structuredClone(doc);choiceDoc.rounds[0].questions[0]={id:'choice-q',text:'<b>Страны?</b>',kind:'multiple',options:['Канада','США','Мексика'],correct:[0,1,2],points:2,duration:45,explanation:'Все три'};
+const choiceModel=new ClassicPreview(choiceDoc);resetClassicView();state=choiceModel.request('classic_action',{p_action:'advance',p_version:1});renderClassic(state,async(name,args)=>choiceModel.request(name,args));
+assert.equal(document.querySelector('.classic-card-title').textContent,'<b>Страны?</b>');assert.equal(document.querySelector('.classic-card-title b'),null);
+assert.equal(document.querySelectorAll('.classic-choice').length,3);assert.equal(document.querySelector('.classic-choice-letter').textContent,'A');
+assert.match(document.querySelector('.classic-card-meta').textContent,/45 сек/);
+const choice=document.querySelector('.classic-choice input');choice.checked=true;choice.setAttribute('checked','');choice.dispatchEvent(new window.Event('input',{bubbles:true}));
+document.querySelector('#classicGame form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(choiceModel.drafts[0].response,{choices:[0]});
+const toggle=[...document.querySelectorAll('#classicGame button')].find(b=>b.textContent==='Показать общий экран без моих ответов');toggle.click();assert.equal(document.querySelector('#classicGame form').hidden,true);assert.ok(document.querySelector('.classic-card-title'));
 console.log('PASS: author templates/validation/import, preview phases/scoring, stale snapshots, persistent input, save action, role controls, custom stakes, media preload, hidden theme and syntax');process.exit(0);
