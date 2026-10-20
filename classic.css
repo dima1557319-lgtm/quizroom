@@ -3,3 +3,30 @@
 @keyframes classicFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}.classic-fade{animation:classicFade .3s ease}@media(prefers-reduced-motion:reduce){.classic-fade{animation:none}}
 
 #classicGame .classic-cover .quiz-media{width:100%;height:auto;max-height:none;margin:0 0 22px;border-radius:18px}
+
+/* Player cards share the live editor preview's visual language. */
+#classicGame .classic-card{padding:clamp(16px,3vw,28px);border:1px solid #40446c;border-radius:20px;background:linear-gradient(145deg,#151b30,#101322);color:#f5f6ff;box-shadow:0 10px 30px #0002}
+#classicGame .classic-card-meta{display:flex;gap:8px;flex-wrap:wrap}
+#classicGame .classic-card-meta span{padding:6px 10px;border-radius:999px;background:#262e48;color:#d5dcff;font-size:13px}
+#classicGame .classic-card-title{font-size:clamp(21px,3vw,28px);line-height:1.45;margin:24px 0;color:#fff;overflow-wrap:anywhere}
+#classicGame .classic-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:20px 0}
+#classicGame label.classic-choice{display:flex;gap:10px;align-items:center;margin:0;padding:14px;min-width:0;border:1px solid #3c4560;border-radius:14px;background:#242b41;color:#fff;cursor:pointer}
+#classicGame .classic-choice input{flex:0 0 20px;width:20px;height:20px;margin:0;accent-color:var(--accent,#a78bfa)}
+#classicGame .classic-choice-letter{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:8px;background:#3b4070;color:#fff}
+#classicGame .classic-choice span{min-width:0;overflow-wrap:anywhere;line-height:1.45}
+#classicGame .classic-choice:has(input:checked){border-color:#b3a1ff;background:#343657;box-shadow:inset 0 0 0 1px #b3a1ff}
+#classicGame .classic-choice:focus-within{outline:3px solid #b3a1ff;outline-offset:3px}
+#classicGame .classic-choice:has(input:disabled){cursor:default}
+#classicGame .classic-card textarea,#classicGame .classic-card select{background:#101322;color:#f5f6ff;border-color:#666f91;border-radius:12px}
+#classicGame .classic-card textarea{min-height:110px;resize:vertical;line-height:1.5}
+#classicGame .classic-card p{color:#c5cce2;line-height:1.5}
+#classicGame .classic-card form>button{border-radius:12px;min-height:46px}
+#classicGame .classic-card .quiz-media{width:auto;max-width:100%;height:auto;border-radius:14px}
+html[data-theme="light"] #classicGame .classic-card{background:linear-gradient(145deg,#faf8ff,#f1f4fc);color:#211735;border-color:#c5b3dd}
+html[data-theme="light"] #classicGame .classic-card-title{color:#211735}
+html[data-theme="light"] #classicGame .classic-card-meta span{background:#e8e4f5;color:#49315f}
+html[data-theme="light"] #classicGame label.classic-choice{background:#fff;color:#211735;border-color:#b6b0cd}
+html[data-theme="light"] #classicGame .classic-choice:has(input:checked){background:#eee7ff;border-color:#7433cd;box-shadow:inset 0 0 0 1px #7433cd}
+html[data-theme="light"] #classicGame .classic-card textarea,html[data-theme="light"] #classicGame .classic-card select{background:#fff;color:#211735;border-color:#a38ebd}
+html[data-theme="light"] #classicGame .classic-card p{color:#5d526d}
+@media(max-width:540px){#classicGame .classic-choices{grid-template-columns:1fr}#classicGame label.classic-choice{padding:12px}#classicGame .classic-card-meta{gap:6px}}

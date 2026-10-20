@@ -21,12 +21,15 @@ async function send(name,args){if(pending)return;pending=true;tick();try{return 
 function canEdit(c,q,server){return latest.status==='playing'&&!c.submitted&&!server.locked&&['question','question_done','repeat','submit'].includes(c.phase)&&(c.rules.submission==='round'||c.phase==='question'&&q.number===c.cursor);}
 function makeQuestion(q,c){
  const rules=q.rules||c.rules;const section=node('section');section.className='classic-card'+(q.animation==='fade'?' classic-fade':'');section.dataset.classicQuestion=q.id;
- section.append(node('h3',`Вопрос ${q.number} · ${q.points} балл.${q.difficulty?' · '+q.difficulty:''}`),node('p',q.text));
+ const meta=node('div');meta.className='classic-card-meta';
+ const kinds={single:'Один ответ',multiple:'Несколько ответов',text:'Текстовый ответ',manual:'Проверяет ведущий'};
+ for(const text of [`Вопрос ${q.number}`,kinds[q.kind]||q.kind,`★ ${q.points} балл.`,...(q.duration!=null?[`⏱ ${q.duration} сек.`]:[]),...(q.difficulty?[q.difficulty]:[])])meta.append(node('span',text));
+ const heading=node('h3',q.text);heading.className='classic-card-title';section.append(meta,heading);
  const media=node('div');renderMedia(q.media,media);
  if(q.media_start!=null){const player=media.querySelector('audio,video');if(player){player.src=q.media.url.split('#')[0]+`#t=${q.media_start},${q.media_end}`;player.addEventListener('timeupdate',()=>{if(player.currentTime>=q.media_end)player.pause();});}}
  section.append(media);
  const form=node('form'),value=valueFor(q);
- if(['single','multiple'].includes(q.kind))q.options.forEach((text,i)=>{const label=node('label');const input=node('input');input.type=q.kind==='single'?'radio':'checkbox';input.name='choice-'+q.id;input.value=i;input.checked=value.response?.choices?.includes(i)||false;label.append(input,document.createTextNode(' '+text));form.append(label);});
+ if(['single','multiple'].includes(q.kind)){const choices=node('div');choices.className='classic-choices';form.append(choices);q.options.forEach((text,i)=>{const label=node('label');const input=node('input');input.type=q.kind==='single'?'radio':'checkbox';input.name='choice-'+q.id;input.value=i;input.checked=value.response?.choices?.includes(i)||false;const letter=node('b',String.fromCharCode(65+i));letter.className='classic-choice-letter';letter.setAttribute('aria-hidden','true');label.className='classic-choice';label.append(input,letter,node('span',text));choices.append(label);});}
  else {const label=node('label','Ваш ответ');const input=node('textarea');input.maxLength=500;input.value=value.response?.text||'';label.append(input);form.append(label);}
  const stakeLabel=node('label','Ставка');const stake=node('select');stake.name='stake';for(const amount of rules.stakes){const policy=stakePolicy(rules,amount);const option=node('option',`Ставка ${amount}: верно ${Number(q.points)+policy.correct_bonus}, ошибка ${policy.wrong}`);option.value=amount;option.selected=Number(amount)===Number(value.stake||0);stake.append(option);}stakeLabel.append(stake);form.append(stakeLabel);
  const status=node('p');status.dataset.draftStatus=q.id;form.append(status);
