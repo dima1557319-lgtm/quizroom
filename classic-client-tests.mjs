@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic3';
 import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
 import {ClassicPreview} from './classic-preview.js?v=classic3';
-import {renderClassic,resetClassicView} from './classic-view.js?v=cards1';
+import {renderClassic,resetClassicView} from './classic-view.js?v=timer1';
 const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
 for(const name of ['admin.js','classic-document.js','classic-editor.js','classic-view.js','classic-preview.js','player.js','player-controls.js','game-summary.js','game-files.js','quiz-preview.js']){const result=spawnSync(process.execPath,['--check',name],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);}
 const template=classicTemplate();assert.equal(template.rounds.length,7);assert.equal(template.rounds.flatMap(r=>r.questions).length,39);assert.equal(classicErrors(template).length,0);assert.ok(validateQuiz(template).length>0,'Empty questions must block publish');
@@ -35,6 +35,18 @@ const choiceModel=new ClassicPreview(choiceDoc);resetClassicView();state=choiceM
 assert.equal(document.querySelector('.classic-card-title').textContent,'<b>Страны?</b>');assert.equal(document.querySelector('.classic-card-title b'),null);
 assert.equal(document.querySelectorAll('.classic-choice').length,3);assert.equal(document.querySelector('.classic-choice-letter').textContent,'A');
 assert.match(document.querySelector('.classic-card-meta').textContent,/45 сек/);
+assert.match(document.querySelector('[data-question-timer]').textContent,/На ответ: 45 сек/);
+const cardBeforeTick=document.querySelector('.classic-card');
+const secondQuestion={...state.classic.questions[0],id:'previous-q',number:0};
+renderClassic({...state,classic:{...state.classic,version:state.classic.version+1,questions:[secondQuestion,...state.classic.questions]}},async()=>{});
+assert.equal(document.querySelector('[data-question-timer="previous-q"]').textContent,'Обсуждение завершено');
+assert.match(document.querySelector('[data-question-timer="choice-q"]').textContent,/На ответ:/);
+for(const [phase,word]of [['repeat','Повтор вопросов'],['submit','До сдачи бланка']]){
+ renderClassic({...state,classic:{...state.classic,phase,deadline:new Date(Date.now()+5000).toISOString()}},async()=>{});
+ assert.match(document.querySelector('[data-question-timer]').textContent,new RegExp(word));
+ assert.ok(document.querySelector('[data-question-timer]').classList.contains('is-urgent'));
+}
+resetClassicView();renderClassic(state,async(name,args)=>choiceModel.request(name,args));
 const choice=document.querySelector('.classic-choice input');choice.checked=true;choice.setAttribute('checked','');choice.dispatchEvent(new window.Event('input',{bubbles:true}));
 document.querySelector('#classicGame form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(choiceModel.drafts[0].response,{choices:[0]});
 const toggle=[...document.querySelectorAll('#classicGame button')].find(b=>b.textContent==='Показать общий экран без моих ответов');toggle.click();assert.equal(document.querySelector('#classicGame form').hidden,true);assert.ok(document.querySelector('.classic-card-title'));

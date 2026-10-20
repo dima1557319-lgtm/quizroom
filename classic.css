@@ -30,3 +30,8 @@ html[data-theme="light"] #classicGame .classic-choice:has(input:checked){backgro
 html[data-theme="light"] #classicGame .classic-card textarea,html[data-theme="light"] #classicGame .classic-card select{background:#fff;color:#211735;border-color:#a38ebd}
 html[data-theme="light"] #classicGame .classic-card p{color:#5d526d}
 @media(max-width:540px){#classicGame .classic-choices{grid-template-columns:1fr}#classicGame label.classic-choice{padding:12px}#classicGame .classic-card-meta{gap:6px}}
+
+#classicGame .classic-card-countdown{position:sticky;top:8px;z-index:1;width:fit-content;max-width:100%;margin:0 0 16px;padding:10px 14px;border:1px solid #666f91;border-radius:12px;background:#1b2440;color:#f5f6ff;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 4px 14px #0003}
+#classicGame .classic-card-countdown.is-urgent{background:#522337;border-color:#ff9eaf;color:#fff}
+html[data-theme="light"] #classicGame .classic-card-countdown{background:#e9e8fa;border-color:#a38ebd;color:#211735}
+html[data-theme="light"] #classicGame .classic-card-countdown.is-urgent{background:#ffe3e8;border-color:#b93a56;color:#802239}
