@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {requestWithTimeout} from './rpc-timeout.js';
+const expected={data:{room:'ready'},error:null};
+assert.deepEqual(await requestWithTimeout({rpc:()=>({abortSignal:async()=>expected})},'test',{},20),expected);
+let aborted=false;
+const hanging={rpc:()=>({abortSignal:signal=>{signal.addEventListener('abort',()=>{aborted=true;});return new Promise(()=>{});}})};
+const start=Date.now();const result=await requestWithTimeout(hanging,'test',{},15);assert.equal(result.error.code,'NETWORK_TIMEOUT');assert.equal(aborted,true);assert.ok(Date.now()-start<500);
+const serverError={data:null,error:{code:'42501',message:'Нет доступа игрока'}};
+assert.deepEqual(await requestWithTimeout({rpc:()=>({abortSignal:async()=>serverError})},'test',{},20),serverError);
+await assert.rejects(requestWithTimeout({rpc:()=>({abortSignal:async()=>{throw Error('offline');}})},'test',{},20),/offline/);
+console.log('PASS: successful response, permanent SDK stall hard deadline/abort, server error and offline rejection');

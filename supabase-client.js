@@ -1,6 +1,6 @@
 
 import { createClient } from
-  "https://esm.sh/@supabase/supabase-js@2";
+  "./supabase-sdk.js?v=2.118.0";
 
 const SUPABASE_URL =
   "https://uboszobopjauqrlsyodn.supabase.co";

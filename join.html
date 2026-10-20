@@ -128,8 +128,7 @@
   <p><a href="./restore.html">Уже были в игре? Восстановить доступ</a></p></main>
 
   <script type="module">
-    import { supabase }
-      from "./supabase-client.js";
+    import {gameRpc} from "./game-rpc.js?v=connect1";
 
     const params =
       new URLSearchParams(window.location.search);
@@ -167,6 +166,7 @@
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
+      if(button.disabled)return;
 
       const roomCode = codeInput.value.trim();
       const playerName = nameInput.value.trim();
@@ -186,7 +186,7 @@
       status.textContent = "Подключаемся...";
 
       try {
-        const { data, error } = await supabase.rpc(
+        const { data, error } = await gameRpc(
           "join_quiz_room",
           {
             p_code: roomCode,
@@ -203,6 +203,8 @@
         }
 
         const player = data[0];
+        const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+        if(!uuid.test(player.player_id)||!uuid.test(player.player_secret))throw new Error('Сервер не вернул данные доступа игрока. Повторите вход.');
         sessionStorage.removeItem('quizroom_host_secret');sessionStorage.removeItem('quizroom_room_code');sessionStorage.setItem('quizroom_role','player');
 
         sessionStorage.setItem(
@@ -242,7 +244,9 @@
 
       } catch (err) {
         status.textContent =
-          "Ошибка: " + err.message;
+          err.code==='NETWORK_TIMEOUT'
+            ? 'Не удалось подтвердить вход: сервер не ответил за 12 секунд. Проверьте интернет и попробуйте ещё раз. Не нажимайте кнопку несколько раз подряд.'
+            : 'Не удалось войти: '+(err.message||'ошибка соединения. Попробуйте ещё раз.');
         button.disabled = false;
       }
     });

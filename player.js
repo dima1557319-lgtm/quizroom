@@ -1,6 +1,6 @@
-import {gameRpc} from './game-rpc.js?v=play2';
+import {gameRpc} from './game-rpc.js?v=connect1';
 import {installAccessBackup} from './game-access.js?v=play2';
-import { supabase } from './supabase-client.js';
+import { supabase } from './supabase-client.js?v=connect1';
 import { renderGame, renderRanking } from './game-view.js?v=classic3';
 import { renderEveryoneControls } from './player-controls.js?v=classic3';
 import {renderClassic} from './classic-view.js?v=rules1';
@@ -54,7 +54,7 @@ async function refresh(){
   if(!channel)channel=supabase.channel(data.realtime_topic,{config:{private:false}}).on('broadcast',{event:'lobby_changed'},()=>{void refresh();}).subscribe(s=>{connected=s==='SUBSCRIBED';if(connected)void refresh();});
  }catch(e){
   if(['42501','28000'].includes(e.code)){stop();el('everyoneControls').hidden=true;el('game').hidden=true;el('ranking').replaceChildren();el('status').textContent='Доступ потерян. Войдите в комнату заново.';}
-  else{connectionStatus('Нет связи. Данные могут быть устаревшими; восстанавливаем подключение…',true);}
+  else{const detail=e?.message||'Ошибка соединения';connectionStatus(current?'Не удалось обновить игру. Повторяем подключение…':'Не удалось загрузить игру. '+detail+' Повторяем подключение…',true);if(!current)el('status').textContent='Не удалось получить состояние комнаты';}
  }finally{busy=false;if(again){again=false;void refresh();}}
 }
 if(id&&secret){sessionStorage.removeItem('quizroom_host_secret');sessionStorage.removeItem('quizroom_room_code');sessionStorage.setItem('quizroom_role','player');timer=setInterval(()=>{if(!document.hidden)void refresh();},2000);void refresh();}
