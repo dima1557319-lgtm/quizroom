@@ -3,7 +3,7 @@ import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js';
 import { renderGame, renderRanking } from './game-view.js?v=classic3';
 import { renderEveryoneControls } from './player-controls.js?v=classic3';
-import {renderClassic} from './classic-view.js?v=tick1';
+import {renderClassic} from './classic-view.js?v=rules1';
 import {renderGameSummary} from './game-summary.js?v=classic3';
 import {newestClassic} from './classic-document.js?v=classic3';
 const el=id=>document.getElementById(id);
