@@ -1,6 +1,6 @@
 import {CountdownSound} from './countdown-sound.js?v=tick1';
 import {prepareClassicMedia} from './classic-preflight.js?v=classic3';
-import {rulesText,stakePolicy} from './classic-document.js?v=classic3';
+import {stakePolicy} from './classic-document.js?v=classic3';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
 const countdownSound=new CountdownSound();let soundDocument;
@@ -47,6 +47,20 @@ function makeQuestion(q,c){
  const award=c.awards?.find(a=>a.question_id===q.id);if(award){const result=node('p',`Начислено: ${Number(award.points)>0?'+':''}${award.points} балл. · ставка ${award.stake} · ${award.correct?'верный ответ':Number(award.points)>0?'частичный зачёт':'ошибка или пропуск'}`);result.className='classic-award';section.append(result);}
  return section;
 }
+function roundRulesView(r){
+ const list=node('ul');list.className='classic-rules-list';
+ const item=(title,text)=>{const li=node('li');li.append(node('strong',title),node('span',text));list.append(li);return li;};
+ const timing=value=>value==='question'?'После вопроса':value==='round'?'После тура':'В конце игры';
+ if(r.theme)item('Тема тура',r.theme);
+ item('Ответы',r.submission==='round'?'Можно менять до сдачи бланка':'Каждый отправленный ответ окончательный');
+ item('Повтор вопросов',r.repeat?`${r.repeat_seconds} сек.`:'Без повтора');
+ if(r.submission==='round')item('Сдача бланка',`${r.submit_seconds} сек.`);
+ if(r.stakes.length>1||r.stake_policy){const li=item('Ставки','Пропуск — 0 баллов');const stakes=node('ul');for(const amount of r.stakes){const p=stakePolicy(r,amount);stakes.append(node('li',`Ставка ${amount}: верно — стоимость ${p.correct_bonus<0?'−':'+'} ${Math.abs(p.correct_bonus)}; ошибка — ${p.wrong}.`));}li.append(stakes);}
+ else item('Ставки','Без ставок. Ошибка и пропуск — 0 баллов');
+ item('Разбор ответов',timing(r.reveal_timing));item('Начисление баллов',timing(r.score_timing));
+ if(r.text){const li=item('Об этом туре','');const extra=node('ul');for(const line of r.text.split(/(?<=[.!?])\s+|\n+/u).filter(t=>t.trim()))extra.append(node('li',line));li.append(extra);}
+ return list;
+}
 export function renderClassic(data,request){
  if(soundDocument!==document){soundDocument=document;for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>countdownSound.unlock(),{passive:true});}
  latest=data;requester=request;offset=Date.parse(data.server_now)-Date.now();
@@ -56,8 +70,9 @@ export function renderClassic(data,request){
  const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
  if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();if(c.phase==='intro'&&c.round_no===1&&data.quiz_cover){const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover);}root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
   const timer=node('p');timer.id='classicTimer';timer.setAttribute('role','timer');root.append(timer);
-  const soundToggle=node('button',countdownSound.enabled?'Тиканье: включено':'Тиканье: выключено');soundToggle.type='button';soundToggle.dataset.countdownSound='true';soundToggle.setAttribute('aria-pressed',String(countdownSound.enabled));soundToggle.addEventListener('click',()=>{const enabled=countdownSound.toggle();soundToggle.textContent=enabled?'Тиканье: включено':'Тиканье: выключено';soundToggle.setAttribute('aria-pressed',String(enabled));});root.append(soundToggle);
-  const rules=node('details');rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),node('p',rulesText(c.rules)));root.append(rules);
+  const soundToggle=node('button');soundToggle.type='button';soundToggle.dataset.countdownSound='true';
+  const updateSoundIcon=()=>{const enabled=countdownSound.enabled;soundToggle.textContent=enabled?'🔊':'🔇';soundToggle.setAttribute('aria-pressed',String(enabled));soundToggle.setAttribute('aria-label',enabled?'Выключить звук таймера':'Включить звук таймера');soundToggle.title=enabled?'Звук таймера включён':'Звук таймера выключен';};updateSoundIcon();soundToggle.addEventListener('click',()=>{countdownSound.toggle();updateSoundIcon();});root.append(soundToggle);
+  const rules=node('details');rules.className='classic-round-rules';rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),roundRulesView(c.rules));root.append(rules);
   const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
   if(c.phase==='media_wait')root.append(node('p','Воспроизведите фрагмент на общем экране. Организатор запустит обсуждение после окончания фрагмента; при ошибке загрузки время на ответ не расходуется.'));
   if(c.submitted)root.append(node('p','Бланк сдан. Ответы и ставки зафиксированы.'));

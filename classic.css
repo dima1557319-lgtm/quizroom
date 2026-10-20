@@ -35,3 +35,17 @@ html[data-theme="light"] #classicGame .classic-card p{color:#5d526d}
 #classicGame .classic-card-countdown.is-urgent{background:#522337;border-color:#ff9eaf;color:#fff}
 html[data-theme="light"] #classicGame .classic-card-countdown{background:#e9e8fa;border-color:#a38ebd;color:#211735}
 html[data-theme="light"] #classicGame .classic-card-countdown.is-urgent{background:#ffe3e8;border-color:#b93a56;color:#802239}
+
+#classicGame button[data-countdown-sound]{display:inline-grid;place-items:center;width:46px;height:46px;min-height:46px;padding:0;margin:4px 0 12px;border:1px solid #666f91;border-radius:50%;background:#262e48;color:#fff;font-size:23px;line-height:1;box-shadow:none}
+#classicGame .classic-round-rules{padding:18px;border-radius:16px;background:#8881}
+#classicGame .classic-round-rules>summary{cursor:pointer;font-weight:700;font-size:19px}
+#classicGame .classic-rules-list{list-style:none;padding:0;margin:18px 0 0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#classicGame .classic-rules-list>li{padding:14px;border:1px solid #666f9166;border-radius:12px;background:#8881;min-width:0}
+#classicGame .classic-rules-list>li>strong{display:block;margin-bottom:7px;font-size:14px;color:#c4b5fd}
+#classicGame .classic-rules-list span,#classicGame .classic-rules-list li{line-height:1.5}
+#classicGame .classic-rules-list ul{padding-left:20px;margin:8px 0 0;list-style:disc}
+#classicGame .classic-rules-list ul li{padding:0;margin:8px 0;border:0}
+#classicGame .classic-rules-list>li:last-child:has(ul){grid-column:1/-1}
+html[data-theme="light"] #classicGame button[data-countdown-sound]{background:#f0eafb;border-color:#c5b3dd}
+html[data-theme="light"] #classicGame .classic-rules-list>li>strong{color:#6233b6}
+@media(max-width:540px){#classicGame .classic-rules-list{grid-template-columns:1fr}}
