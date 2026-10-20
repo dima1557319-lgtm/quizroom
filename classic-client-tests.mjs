@@ -5,7 +5,7 @@ import {pathToFileURL} from 'node:url';
 import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic3';
 import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
 import {ClassicPreview} from './classic-preview.js?v=classic3';
-import {renderClassic,resetClassicView} from './classic-view.js?v=timer1';
+import {renderClassic,resetClassicView} from './classic-view.js?v=tick1';
 const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
 for(const name of ['admin.js','classic-document.js','classic-editor.js','classic-view.js','classic-preview.js','player.js','player-controls.js','game-summary.js','game-files.js','quiz-preview.js']){const result=spawnSync(process.execPath,['--check',name],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);}
 const template=classicTemplate();assert.equal(template.rounds.length,7);assert.equal(template.rounds.flatMap(r=>r.questions).length,39);assert.equal(classicErrors(template).length,0);assert.ok(validateQuiz(template).length>0,'Empty questions must block publish');
@@ -50,4 +50,12 @@ resetClassicView();renderClassic(state,async(name,args)=>choiceModel.request(nam
 const choice=document.querySelector('.classic-choice input');choice.checked=true;choice.setAttribute('checked','');choice.dispatchEvent(new window.Event('input',{bubbles:true}));
 document.querySelector('#classicGame form').dispatchEvent(new window.Event('submit',{bubbles:true,cancelable:true}));await new Promise(resolve=>setTimeout(resolve,0));assert.deepEqual(choiceModel.drafts[0].response,{choices:[0]});
 const toggle=[...document.querySelectorAll('#classicGame button')].find(b=>b.textContent==='Показать общий экран без моих ответов');toggle.click();assert.equal(document.querySelector('#classicGame form').hidden,true);assert.ok(document.querySelector('.classic-card-title'));
+const {CountdownSound}=await import('./countdown-sound.js');let clock=0,sounds=0;const param={setValueAtTime(){},exponentialRampToValueAtTime(){}};
+const fakeAudio={state:'running',currentTime:0,destination:{},resume:async()=>{},createOscillator:()=>({frequency:param,connect(){},disconnect(){},start(){sounds++;},stop(){}}),createGain:()=>({gain:param,connect(){},disconnect(){}})};
+const sound=new CountdownSound({context:()=>fakeAudio,now:()=>clock});sound.unlock();
+const soundState={remaining:11,stage:'question1',active:true,visible:true};sound.update(soundState);assert.equal(sounds,0);
+soundState.remaining=10;sound.update(soundState);assert.equal(sounds,1);clock=250;sound.update(soundState);assert.equal(sounds,1);clock=1000;sound.update(soundState);assert.equal(sounds,2);
+soundState.remaining=1;clock=2000;sound.update(soundState);clock=2250;sound.update(soundState);assert.equal(sounds,4);
+for(const extra of [{remaining:0},{visible:false},{active:false}]){sound.update({...soundState,...extra});assert.equal(sounds,4);}
+sound.toggle();sound.update(soundState);assert.equal(sounds,4);sound.toggle();sound.update({...soundState,stage:'question2'});assert.equal(sounds,5);
 console.log('PASS: author templates/validation/import, preview phases/scoring, stale snapshots, persistent input, save action, role controls, custom stakes, media preload, hidden theme and syntax');process.exit(0);

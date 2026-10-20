@@ -4,7 +4,7 @@ function tick(){if(!latest)return;const seconds=Math.max(0,Math.ceil((Date.parse
 setInterval(tick,250);
 import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
 import {isClassic} from './classic-document.js?v=classic3';
-import {startClassicPreview} from './classic-preview.js?v=timer1';
+import {startClassicPreview} from './classic-preview.js?v=tick1';
 const $=id=>document.getElementById(id);let doc,questions=[],index=0,phase='question',started=Date.now(),responses=[],scores=[],graded=[];
 function points(q,response){
  if(q.kind==='manual')return 0;
