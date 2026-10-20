@@ -1,7 +1,9 @@
+import {CountdownSound} from './countdown-sound.js?v=tick1';
 import {prepareClassicMedia} from './classic-preflight.js?v=classic3';
 import {rulesText,stakePolicy} from './classic-document.js?v=classic3';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
+const countdownSound=new CountdownSound();let soundDocument;
 let signature='',latest,offset=0,local=new Map(),requester,pending=false,screen=false,preflightReady=true;
 export function resetClassicView(){signature='';local=new Map();latest=null;screen=false;}
 const phaseNames={intro:'Правила тура',media_wait:'Медиа на общем экране',question:'Обсуждение вопроса',question_done:'Обсуждение завершено',answer:'Разбор вопроса',repeat:'Повтор вопросов',submit:'Сдача бланков',review:'Разбор тура',round_results:'Результаты тура',break:'Перерыв',finished:'Итоги игры'};
@@ -46,6 +48,7 @@ function makeQuestion(q,c){
  return section;
 }
 export function renderClassic(data,request){
+ if(soundDocument!==document){soundDocument=document;for(const event of ['pointerdown','keydown'])document.addEventListener(event,()=>countdownSound.unlock(),{passive:true});}
  latest=data;requester=request;offset=Date.parse(data.server_now)-Date.now();
  let root=document.getElementById('classicGame');if(!root){root=node('section');root.id='classicGame';document.getElementById('game').after(root);}root.hidden=false;
  if(data.status==='waiting'){const waitingKey=JSON.stringify(['waiting',data.room_code,data.quiz_cover?.url]);if(signature!==waitingKey){signature=waitingKey;root.replaceChildren();const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover,node('p','Все участники играют. Первый вошедший запускает игру, затем на экране появятся правила первого тура.'));}return;}
@@ -53,6 +56,7 @@ export function renderClassic(data,request){
  const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
  if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();if(c.phase==='intro'&&c.round_no===1&&data.quiz_cover){const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover);}root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
   const timer=node('p');timer.id='classicTimer';timer.setAttribute('role','timer');root.append(timer);
+  const soundToggle=node('button',countdownSound.enabled?'Тиканье: включено':'Тиканье: выключено');soundToggle.type='button';soundToggle.dataset.countdownSound='true';soundToggle.setAttribute('aria-pressed',String(countdownSound.enabled));soundToggle.addEventListener('click',()=>{const enabled=countdownSound.toggle();soundToggle.textContent=enabled?'Тиканье: включено':'Тиканье: выключено';soundToggle.setAttribute('aria-pressed',String(enabled));});root.append(soundToggle);
   const rules=node('details');rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),node('p',rulesText(c.rules)));root.append(rules);
   const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
   if(c.phase==='media_wait')root.append(node('p','Воспроизведите фрагмент на общем экране. Организатор запустит обсуждение после окончания фрагмента; при ошибке загрузки время на ответ не расходуется.'));
@@ -79,6 +83,8 @@ export function renderClassic(data,request){
 }
 function tick(){
  if(!latest||latest.status==='waiting')return;const c=latest.classic;const left=c.deadline?Math.max(0,Math.ceil((Date.parse(c.deadline)-Date.now()-offset)/1000)):null;
+ let visible=!document.hidden;try{const frame=document.defaultView?.frameElement;if(frame?.checkVisibility)visible&&=frame.checkVisibility();}catch{}
+ countdownSound.update({remaining:left,stage:JSON.stringify([latest.room_code,c.round_no,c.phase,c.cursor,c.deadline]),active:latest.status==='playing'&&!c.submitted&&['question','media_wait','repeat','submit'].includes(c.phase)&&c.questions.length>0,visible});
  const timer=document.getElementById('classicTimer');if(timer)timer.textContent=left==null?'':left?`Осталось: ${left} сек.`:c.phase==='media_wait'?'Фрагмент завершён. Организатор запускает обсуждение.':'Время этапа вышло. Обновляем состояние…';
  for(const q of c.questions){const card=document.querySelector(`[data-classic-question="${q.id}"]`);if(!card)continue;
   const countdown=card.querySelector('[data-question-timer]');
