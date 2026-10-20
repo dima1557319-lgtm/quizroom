@@ -1,0 +1,35 @@
+/* QuizRoom question editor UX enhancement — additive, no JS/data changes */
+#roundEditor {min-width:0}
+#roundEditor > fieldset {border-color:var(--accent,#8068db);background:color-mix(in srgb,var(--surface,#17132f) 90%,white 10%);padding:clamp(12px,2vw,22px)}
+#roundEditor > fieldset > legend {font-size:1.1rem;font-weight:750;padding:0 10px}
+.question-fold {overflow:hidden;border:1px solid #62567e;border-radius:16px;background:var(--surface,#17132f);box-shadow:0 6px 24px #0002;scroll-margin-top:100px;transition:border-color .18s,box-shadow .18s}
+.question-fold[open] {border-color:var(--accent,#a78bfa);box-shadow:0 8px 28px #0003}
+.question-fold>summary {list-style:none;display:flex;align-items:center;gap:10px;padding:17px 18px;line-height:1.45;cursor:pointer;overflow-wrap:anywhere}
+.question-fold>summary::-webkit-details-marker {display:none}
+.question-fold>summary::before {content:'▸';color:var(--accent,#a78bfa);font-size:1.15rem;transition:transform .15s}
+.question-fold[open]>summary::before {transform:rotate(90deg)}
+.question-fold>summary::after {content:'Редактировать';margin-left:auto;font-size:.75rem;letter-spacing:.02em;opacity:.7;white-space:nowrap}
+.question-fold[open]>summary::after {content:'Свернуть'}
+.question-fold>.question-card {margin:0;padding:clamp(12px,2vw,22px);border:0;border-top:1px solid #62567e;border-radius:0;background:transparent}
+.question-card>legend {font-weight:700;padding:0 8px}
+.question-card>label {font-weight:600;margin-top:18px}
+.question-card textarea {min-height:105px;resize:vertical;line-height:1.55}
+.question-card input,.question-card textarea,.question-card select {min-width:0;transition:border-color .15s,box-shadow .15s}
+.question-card input:focus-visible,.question-card textarea:focus-visible,.question-card select:focus-visible {outline:2px solid var(--accent,#a78bfa);outline-offset:2px}
+.question-card .option-row {padding:8px 10px;margin:8px 0;border:1px solid #655780;border-radius:12px;grid-template-columns:28px minmax(0,1fr) auto;gap:10px}
+.question-card .option-row:has(input[type=radio]:checked),.question-card .option-row:has(input[type=checkbox]:checked) {border-color:var(--accent,#a78bfa);background:color-mix(in srgb,var(--accent,#a78bfa) 13%,transparent)}
+.question-card .option-row input:not([type=checkbox]):not([type=radio]) {margin:0}
+.question-card .option-row button {font-size:.85rem;padding:9px 12px}
+.question-card>details {border:1px solid #655780;border-radius:12px;margin:14px 0;padding:12px 15px}
+.question-card>details>summary {cursor:pointer;font-weight:700;padding:5px 0}
+.question-card>.actions {gap:8px;margin-bottom:16px}
+.question-card>.actions button {padding:9px 12px;font-size:.88rem}
+#questionOutline {padding:6px 0;gap:8px}
+#questionOutline button {border-radius:999px;max-width:210px}
+#questionOutline button:focus-visible,.question-fold>summary:focus-visible {outline:3px solid var(--accent,#a78bfa);outline-offset:3px}
+@media(max-width:650px){.question-fold{scroll-margin-top:16px}.question-fold>summary{padding:14px}.question-fold>summary::after{display:none}.question-card .option-row{padding:7px;gap:6px}.question-card .option-row button{padding:9px 7px}.question-card>.actions button{flex:1 1 45%}}
+@media(prefers-reduced-motion:reduce){.question-fold,.question-fold>summary::before,.question-card input,.question-card textarea,.question-card select{transition:none}}
+
+/* Preserve the existing light theme in the additive card layout. */
+html[data-theme="light"] #roundEditor>fieldset{background:#faf8ff}
+html[data-theme="light"] #roundEditor .question-fold{background:#fff;color:#211735}
