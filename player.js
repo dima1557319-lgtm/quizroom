@@ -1,11 +1,11 @@
 import {gameRpc} from './game-rpc.js?v=connect1';
 import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js?v=connect1';
-import { renderGame, renderRanking } from './game-view.js?v=start1';
-import { renderEveryoneControls } from './player-controls.js?v=classic3';
-import {renderClassic} from './classic-view.js?v=start1';
+import { renderGame, renderRanking } from './game-view.js?v=hints1';
+import { renderEveryoneControls } from './player-controls.js?v=hints1';
+import {renderClassic} from './classic-view.js?v=hints1';
 import {renderGameSummary} from './game-summary.js?v=fold1';
-import {newestClassic} from './classic-document.js?v=classic3';
+import {newestClassic} from './classic-document.js?v=hints1';
 const el=id=>document.getElementById(id);
 function connectionStatus(text,warning=false){el('connection').textContent=text;el('connection').hidden=!warning;}
 let id,secret;

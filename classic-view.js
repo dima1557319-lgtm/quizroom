@@ -1,7 +1,7 @@
 import {answerExplanation} from './answer-explanation.js?v=answers1';
 import {CountdownSound} from './countdown-sound.js?v=tick1';
 import {prepareClassicMedia} from './classic-preflight.js?v=media1';
-import {stakePolicy} from './classic-document.js?v=classic3';
+import {stakePolicy} from './classic-document.js?v=hints1';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
 const countdownSound=new CountdownSound();let soundDocument;
@@ -33,9 +33,15 @@ function makeQuestion(q,c){
  if(q.media_start!=null){const player=media.querySelector('audio,video');if(player){player.src=q.media.url.split('#')[0]+`#t=${q.media_start},${q.media_end}`;player.addEventListener('timeupdate',()=>{if(player.currentTime>=q.media_end)player.pause();});}}
  section.append(media);
  const form=node('form'),value=valueFor(q);
+ if(q.hint_count){
+  const box=node('aside');box.className='classic-hints';box.append(node('strong',`За верный ответ: ${new Intl.NumberFormat('ru-RU').format(Math.max(0,Number(q.points)-0.5*(q.hints_used||0)))} балла`),node('p','Каждая подсказка стоит 0,5 балла. Открытую подсказку нельзя отменить.'));
+  (q.hints||[]).forEach((text,i)=>{const item=node('div');item.className='classic-hint-open';item.append(node('b',`Подсказка ${i+1}`),node('p',text));box.append(item);});
+  if((q.hints_used||0)<q.hint_count){const n=(q.hints_used||0)+1;const hint=node('button',`Подсказка ${n} · −0,5 балла`);hint.type='button';hint.dataset.useHint=q.id;const error=node('p');error.setAttribute('role','alert');hint.addEventListener('click',async()=>{if(pending||!canEdit(latest.classic,q,fromServer(q.id)))return;try{const result=await send('classic_use_hint',{p_question_id:q.id,p_hint_no:n});if(result)renderClassic(result,requester);}catch(e){error.textContent=e.message||'Не удалось открыть подсказку';}});box.append(hint,error);}
+  form.append(box);
+ }
  if(['single','multiple'].includes(q.kind)){const choices=node('div');choices.className='classic-choices';form.append(choices);q.options.forEach((text,i)=>{const label=node('label');const input=node('input');input.type=q.kind==='single'?'radio':'checkbox';input.name='choice-'+q.id;input.value=i;input.checked=value.response?.choices?.includes(i)||false;const letter=node('b',String.fromCharCode(65+i));letter.className='classic-choice-letter';letter.setAttribute('aria-hidden','true');label.className='classic-choice';label.append(input,letter,node('span',text));choices.append(label);});}
  else {const label=node('label','Ваш ответ');const input=node('textarea');input.maxLength=500;input.value=value.response?.text||'';label.append(input);form.append(label);}
- const stakeLabel=node('label','Ставка');const stake=node('select');stake.name='stake';for(const amount of rules.stakes){const policy=stakePolicy(rules,amount);const option=node('option',`Ставка ${amount}: верно ${Number(q.points)+policy.correct_bonus}, ошибка ${policy.wrong}`);option.value=amount;option.selected=Number(amount)===Number(value.stake||0);stake.append(option);}stakeLabel.append(stake);form.append(stakeLabel);
+ const stakeLabel=node('label','Ставка');const stake=node('select');stake.name='stake';for(const amount of rules.stakes){const policy=stakePolicy(rules,amount);const option=node('option',`Ставка ${amount}: верно ${Math.max(0,Number(q.points)-0.5*(q.hints_used||0))+policy.correct_bonus}, ошибка ${policy.wrong}`);option.value=amount;option.selected=Number(amount)===Number(value.stake||0);stake.append(option);}stakeLabel.append(stake);form.append(stakeLabel);
  const status=node('p');status.dataset.draftStatus=q.id;form.append(status);
  form.addEventListener('input',()=>{const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value.trim()};value.response=response.choices?.length===0||response.text===''?null:response;value.stake=value.response?Number(stake.value):0;value.dirty=true;remember(q.id,value);status.textContent='Не отправлено. Сохраните ответ.';});
  const save=node('button',rules.submission==='round'?'Сохранить ответ':'Отправить окончательный ответ');save.type='submit';form.append(save);
@@ -68,7 +74,7 @@ export function renderClassic(data,request){
  let root=document.getElementById('classicGame');if(!root){root=node('section');root.id='classicGame';document.getElementById('game').after(root);}root.hidden=false;
  if(data.status==='waiting'){const waitingKey=JSON.stringify(['waiting',data.room_code,data.quiz_cover?.url]);if(signature!==waitingKey){signature=waitingKey;root.replaceChildren();const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover,node('p','Все участники играют. Первый вошедший запускает игру, затем на экране появятся правила первого тура.'));}return;}
  const c=data.classic;
- const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
+ const key=JSON.stringify([data.room_code,c.version,c.phase,c.questions.map(q=>[q.id,q.revealed,q.hints_used]),c.awards,c.submitted,c.drafts.map(d=>[d.question_id,d.locked]),data.can_control,screen]);
  if(signature!==key){signature=key;preflightReady=!c.preflight?.length;root.replaceChildren();if(c.phase==='intro'&&c.round_no===1&&data.quiz_cover){const cover=node('div');cover.className='classic-cover';renderMedia(data.quiz_cover,cover);root.append(cover);}root.append(node('h2',`${c.round_no} / ${c.round_count} · ${c.round_title}`),node('h3',phaseNames[c.phase]||c.phase));
   const timer=node('p');timer.id='classicTimer';timer.setAttribute('role','timer');root.append(timer);
   const soundToggle=node('button');soundToggle.type='button';soundToggle.dataset.countdownSound='true';
@@ -115,7 +121,7 @@ function tick(){
    if(countdown.textContent!==label)countdown.textContent=label;
    countdown.classList.toggle('is-urgent',left!=null&&left<=10&&left>0&&((c.phase==='question'||c.phase==='media_wait')&&q.number===c.cursor||['repeat','submit'].includes(c.phase))&&!c.submitted);
   }
-  const blocked=!canEdit(c,q,fromServer(q.id))||pending||(left===0&&['question','submit','repeat'].includes(c.phase));for(const input of card.querySelectorAll('input,textarea,select,button[type="submit"]'))input.disabled=blocked;}
+  const blocked=!canEdit(c,q,fromServer(q.id))||pending||(left===0&&['question','submit','repeat'].includes(c.phase));for(const input of card.querySelectorAll('input,textarea,select,button[type="submit"],[data-use-hint]'))input.disabled=blocked;}
  for(const button of document.querySelectorAll('[data-classic-control]'))button.disabled=pending||c.phase==='intro'&&!preflightReady||c.phase==='media_wait'&&left>0;
  for(const button of document.querySelectorAll('[data-classic-submit]'))button.disabled=pending||left===0;
 }

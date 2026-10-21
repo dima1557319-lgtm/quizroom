@@ -56,3 +56,8 @@ html[data-theme="light"] #classicGame .classic-rules-list>li>strong{color:#6233b
 #classicGame button.classic-screen-toggle:hover{background:#ffffff0c;color:#f5f6ff}
 html[data-theme="light"] #classicGame button.classic-screen-toggle{background:#f7f5fa;color:#665c74;border-color:#d4c9e5}
 html[data-theme="light"] #classicGame button.classic-start-round{background:#15803d;color:#fff;border-color:#166534}
+
+.classic-hints{margin:1rem 0;padding:1rem;border:1px solid #a78bfa77;border-radius:16px;background:#a78bfa0c;display:grid;gap:.7rem}
+.classic-hints>strong{font-size:1.1rem}.classic-hints p{margin:0;line-height:1.5}.classic-hints>p{font-size:.9rem;opacity:.8}
+.classic-hint-open{padding:.85rem;border-radius:12px;background:#a78bfa14;border-left:3px solid #a78bfa}.classic-hint-open b{display:block;margin-bottom:.35rem}
+.classic-hints button{width:auto;justify-self:start}.classic-hints [role=alert]:empty{display:none}
