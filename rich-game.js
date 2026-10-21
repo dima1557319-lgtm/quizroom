@@ -1,3 +1,4 @@
+import {answerExplanation} from './answer-explanation.js?v=answers1';
 import {renderMedia} from './quiz-media.js?v=studio1';
 let key;
 function draftKey(){try{return 'quizroom_answer_draft_'+sessionStorage.getItem('quizroom_player_id');}catch{return null;}}
@@ -27,7 +28,7 @@ export function renderRichGame(data,onAnswer){
    const button=make('button','Отправить ответ');button.type='submit';button.dataset.richAnswer='true';form.append(button);
    form.addEventListener('submit',e=>{e.preventDefault();if(data.phase!=='question'||data.my_response!=null)return;const response=['single','multiple'].includes(q.kind)?{choices:[...form.querySelectorAll('input:checked')].map(i=>Number(i.value))}:{text:form.querySelector('textarea').value.trim()};if(response.choices&&!response.choices.length)return;void onAnswer(q.id,response);});target.append(form);
   }else if(q.options?.length){const list=make('ol');q.options.forEach((value,i)=>{const li=make('li',value);if(q.correct_choices?.includes(i))li.className='correct';list.append(li);});target.append(list);}else target.append(make('p',q.kind==='manual'?'Игроки отвечают текстом; оценка ведущим.':'Игроки вводят ответ текстом.'));
-  if(q.revealed){target.append(make('p',q.explanation||''));const media=make('div');renderMedia(q.answer_media,media);target.append(media);}
+  if(q.revealed){target.append(make('p',answerExplanation(q.explanation)));const media=make('div');renderMedia(q.answer_media,media);target.append(media);}
  }
- if(data.review?.length){const title=make('h3','Разбор ответов');target.append(title);for(const item of data.review){const section=make('section');section.append(make('h4',`${item.number}. ${item.text}`),make('p',answerText(item)),make('p',item.explanation||''));const media=make('div');renderMedia(item.answer_media,media);section.append(media);target.append(section);}}
+ if(data.review?.length){const title=make('h3','Разбор ответов');target.append(title);for(const item of data.review){const section=make('section');section.append(make('h4',`${item.number}. ${item.text}`),make('p',answerText(item)),make('p',answerExplanation(item.explanation)));const media=make('div');renderMedia(item.answer_media,media);section.append(media);target.append(section);}}
 }

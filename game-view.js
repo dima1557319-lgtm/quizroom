@@ -1,5 +1,5 @@
 import {renderGameSummary} from './game-summary.js?v=classic1';
-import {renderRichGame} from './rich-game.js?v=everyone1';
+import {renderRichGame} from './rich-game.js?v=answers1';
 export const formatPoints = value => new Intl.NumberFormat('ru-RU', {maximumFractionDigits:2}).format(Number(value));
 const el = id => document.getElementById(id);
 let state, offset = 0, renderKey;
