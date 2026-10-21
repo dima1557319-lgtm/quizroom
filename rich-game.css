@@ -1,3 +1,7 @@
 .quiz-media{display:block;max-width:100%;max-height:440px;margin:18px auto;border-radius:12px}#options label.option{display:flex;align-items:center;gap:12px}#options input[type=checkbox],#options input[type=radio]{width:22px;height:22px;display:inline-block;margin:0}#options textarea{display:block;width:100%;min-height:100px;padding:12px;border:1px solid #655780;border-radius:10px;background:#0b0920;color:#fff;font:inherit;margin:10px 0}#hostGrading form{border:1px solid #655780;padding:14px;border-radius:12px;margin:14px 0}#hostGrading input{display:block;width:100%;padding:10px;font:inherit}.question-fade{animation:questionFade .35s ease-out}@keyframes questionFade{from{opacity:.2;transform:translateY(8px)}to{opacity:1;transform:none}}@media(prefers-reduced-motion:reduce){.question-fade{animation:none}}
 
 #roundBreak,#results,#accessBackup{border:1px solid var(--accent-border,#655780);border-radius:14px;padding:16px;margin:20px 0}#results button{display:block;margin:10px 0}dialog{max-width:min(620px,95vw);border:1px solid #655780;border-radius:16px;padding:24px;background:#17132f;color:#fff}dialog::backdrop{background:#000a}html[data-theme=light] dialog{background:#fff;color:#211735}
+
+.game-results-fold>summary,#accessBackup>summary{cursor:pointer;font-weight:700;font-size:18px;line-height:1.4}
+.game-results-fold[open]>summary,#accessBackup[open]>summary{margin-bottom:16px}
+.game-results-fold>summary:focus-visible,#accessBackup>summary:focus-visible{outline:3px solid var(--accent,#a78bfa);outline-offset:4px;border-radius:4px}
