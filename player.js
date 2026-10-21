@@ -4,7 +4,7 @@ import { supabase } from './supabase-client.js?v=connect1';
 import { renderGame, renderRanking } from './game-view.js?v=classic3';
 import { renderEveryoneControls } from './player-controls.js?v=classic3';
 import {renderClassic} from './classic-view.js?v=media1';
-import {renderGameSummary} from './game-summary.js?v=classic3';
+import {renderGameSummary} from './game-summary.js?v=fold1';
 import {newestClassic} from './classic-document.js?v=classic3';
 const el=id=>document.getElementById(id);
 function connectionStatus(text,warning=false){el('connection').textContent=text;el('connection').hidden=!warning;}
