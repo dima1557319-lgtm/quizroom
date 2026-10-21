@@ -1,3 +1,4 @@
+import {answerExplanation} from './answer-explanation.js?v=answers1';
 import {CountdownSound} from './countdown-sound.js?v=tick1';
 import {prepareClassicMedia} from './classic-preflight.js?v=media1';
 import {stakePolicy} from './classic-document.js?v=classic3';
@@ -43,7 +44,7 @@ function makeQuestion(q,c){
   catch(error){status.textContent=error.message||'Не удалось сохранить. Проверьте связь.';}finally{tick();}
  });
  const restore=node('button','Загрузить серверный ответ');restore.type='button';restore.dataset.restore=q.id;restore.addEventListener('click',()=>{local.set(q.id,{...fromServer(q.id),dirty:false});remember(q.id,local.get(q.id));signature='';renderClassic(latest,requester);});form.append(restore);section.append(form);
- if(q.revealed&&q.answer){const answer=q.answer.accepted?.length?q.answer.accepted.join('; '):(q.answer.choices||[]).map(i=>q.options[i]).join('; ');section.append(node('p','Правильный ответ: '+answer),node('p',q.answer.explanation||''));const revealMedia=node('div');renderMedia(q.answer.media,revealMedia);section.append(revealMedia);}
+ if(q.revealed&&q.answer){const answer=q.answer.accepted?.length?q.answer.accepted.join('; '):(q.answer.choices||[]).map(i=>q.options[i]).join('; ');section.append(node('p','Правильный ответ: '+answer),node('p',answerExplanation(q.answer.explanation)));const revealMedia=node('div');renderMedia(q.answer.media,revealMedia);section.append(revealMedia);}
  const award=c.awards?.find(a=>a.question_id===q.id);if(award){const result=node('p',`Начислено: ${Number(award.points)>0?'+':''}${award.points} балл. · ставка ${award.stake} · ${award.correct?'верный ответ':Number(award.points)>0?'частичный зачёт':'ошибка или пропуск'}`);result.className='classic-award';section.append(result);}
  return section;
 }

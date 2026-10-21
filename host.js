@@ -1,9 +1,9 @@
 import {gameRpc} from './game-rpc.js?v=play2';
 import {installAccessBackup} from './game-access.js?v=play2';
 import { supabase } from './supabase-client.js';
-import { renderHostGame } from './host-game.js?v=play2';
+import { renderHostGame } from './host-game.js?v=answers1';
 
-import { formatPoints } from './game-view.js?v=play2';
+import { formatPoints } from './game-view.js?v=answers1';
 const byId = (id) => document.getElementById(id);
 let channel, timer, busy = false, again = false, stopped = false, subscribed = false;
 let roomCode, hostSecret;

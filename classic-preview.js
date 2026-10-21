@@ -1,5 +1,5 @@
 import {stakePolicy} from './classic-document.js?v=classic3';
-import {renderClassic,resetClassicView} from './classic-view.js?v=media1';
+import {renderClassic,resetClassicView} from './classic-view.js?v=answers1';
 export class ClassicPreview {
  constructor(document,now=()=>Date.now()){this.doc=structuredClone(document);this.now=now;this.round=0;this.cursor=0;this.phase='intro';this.version=1;this.deadline=null;this.drafts=[];this.awards=[];this.submitted=false;}
  get rules(){return this.doc.rounds[this.round].rules;}

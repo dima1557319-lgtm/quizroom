@@ -1,5 +1,5 @@
 import {gameRpc} from './game-rpc.js?v=play2';
-import {renderGame,formatPoints} from './game-view.js?v=play2';
+import {renderGame,formatPoints} from './game-view.js?v=answers1';
 const el=id=>document.getElementById(id);
 let current,refresh,pending=false,setupKey='',gradingKey='';
 function setup(data){
