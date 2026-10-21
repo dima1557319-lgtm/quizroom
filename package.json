@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "QUIZROOM_CLASSIC_TEST=1 node no-host-tests.mjs && node classic-client-tests.mjs && node classic-admin-tests.mjs && node rpc-timeout-tests.mjs && node join-client-tests.mjs"
+    "test": "QUIZROOM_CLASSIC_TEST=1 node no-host-tests.mjs && node classic-client-tests.mjs && node classic-admin-tests.mjs && node rpc-timeout-tests.mjs && node join-client-tests.mjs",
+    "test:hints": "QUIZROOM_CLASSIC_TEST=1 QUIZROOM_HINTS_TEST=1 node no-host-tests.mjs && node question-hints-tests.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.10",

@@ -46,10 +46,11 @@ if(process.env.QUIZROOM_CLASSIC_TEST){
  await db.exec(studio.slice(studio.indexOf('create or replace function public.admin_publish_quiz'),studio.indexOf('create or replace function public.admin_unpublish_quiz')));
  await db.exec(studio.slice(studio.indexOf('create or replace function public.list_quiz_catalog'),studio.indexOf('create or replace function public.create_quiz_room_v2')));
  await db.exec(await read('classic-game.sql'));await db.exec(await read('classic-game.sql'));
+ if(process.env.QUIZROOM_HINTS_TEST){await db.exec(await read('question-hints.sql'));await db.exec(await read('question-hints.sql'));}
 }
 await db.exec(await read('game-reliability-tests.sql')); // Hosted regression.
 await db.exec(await read('no-host-tests.sql'));
-if(process.env.QUIZROOM_CLASSIC_TEST){await db.exec(await read('classic-tests.sql'));console.log('PASS: classic server tests');}
+if(process.env.QUIZROOM_CLASSIC_TEST){await db.exec(await read('classic-tests.sql'));console.log('PASS: classic server tests');if(process.env.QUIZROOM_HINTS_TEST){await db.exec(await read('question-hints-tests.sql'));console.log('PASS: paid hints server tests');}}
 console.log('PASS: PostgreSQL migration twice, hosted regression, everyone gameplay/security/recovery');
 await db.close();
 

@@ -3,7 +3,7 @@ export function newestClassic(old,data){
  if(old?.format!=='classic'||data?.format!=='classic'||old.room_code!==data.room_code)return data;
  if(old.classic.version>data.classic.version)return old;
  const previous=new Map(old.classic.drafts.map(d=>[d.question_id,d]));
- return {...data,classic:{...data.classic,drafts:data.classic.drafts.map(d=>previous.get(d.question_id)?.revision>d.revision?previous.get(d.question_id):d).concat(old.classic.drafts.filter(d=>!data.classic.drafts.some(x=>x.question_id===d.question_id)))}};
+ return {...data,classic:{...data.classic,questions:data.classic.questions.map(q=>{const prev=old.classic.questions.find(p=>p.id===q.id);return prev?.hints_used>q.hints_used?{...q,hints_used:prev.hints_used,hints:prev.hints}:q;}),drafts:data.classic.drafts.map(d=>previous.get(d.question_id)?.revision>d.revision?previous.get(d.question_id):d).concat(old.classic.drafts.filter(d=>!data.classic.drafts.some(x=>x.question_id===d.question_id)))}};
 }
 const uid=()=>crypto.randomUUID();
 export function roundRules(overrides={}){return {submission:'round',repeat:true,repeat_seconds:60,submit_seconds:30,transition:'manual',score_timing:'round',reveal_timing:'round',stakes:[0],break_seconds:0,break_manual:false,media_clock:'with_question',text:'',difficulty:'Смешанный',theme:'',theme_hidden:false,...overrides};}

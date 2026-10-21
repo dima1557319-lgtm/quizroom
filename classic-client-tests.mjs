@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {spawnSync} from 'node:child_process';
 import {pathToFileURL} from 'node:url';
-import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=classic3';
-import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
-import {ClassicPreview} from './classic-preview.js?v=start1';
-import {renderClassic,resetClassicView} from './classic-view.js?v=start1';
+import {classicTemplate,classicErrors,newestClassic} from './classic-document.js?v=hints1';
+import {validateQuiz,importQuiz} from './studio-document.js?v=hints1';
+import {ClassicPreview} from './classic-preview.js?v=hints1';
+import {renderClassic,resetClassicView} from './classic-view.js?v=hints1';
 const {parseHTML}=process.env.QUIZROOM_TEST_MODULES?await import(pathToFileURL(process.env.QUIZROOM_TEST_MODULES+'/linkedom/esm/index.js')):await import('linkedom');
 for(const name of ['admin.js','classic-document.js','classic-editor.js','classic-view.js','classic-preview.js','player.js','player-controls.js','game-summary.js','game-files.js','quiz-preview.js']){const result=spawnSync(process.execPath,['--check',name],{encoding:'utf8'});assert.equal(result.status,0,result.stderr);}
 const template=classicTemplate();assert.equal(template.rounds.length,7);assert.equal(template.rounds.flatMap(r=>r.questions).length,39);assert.equal(classicErrors(template).length,0);assert.ok(validateQuiz(template).length>0,'Empty questions must block publish');

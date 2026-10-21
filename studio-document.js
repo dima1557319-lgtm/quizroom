@@ -1,4 +1,4 @@
-import {isClassic,classicErrors,restoreClassic} from './classic-document.js?v=classic3';
+import {isClassic,classicErrors,restoreClassic} from './classic-document.js?v=hints1';
 export const countQuestions=d=>d.rounds.reduce((n,r)=>n+r.questions.length,0);
 export function validateQuiz(d){
  const errors=[];const add=(text,field,ri,qi)=>errors.push({text,field,ri,qi});
@@ -32,6 +32,10 @@ export function validateQuiz(d){
    }
    if(q.kind==='text'&&(!Array.isArray(q.accepted)||q.accepted.length<1||q.accepted.length>30||q.accepted.some(a=>!length(a,1,500))))err('добавьте от 1 до 30 допустимых написаний','accepted');
    if(String(q.explanation||'').length>2000)err('пояснение до 2000 символов','explanation');
+   if(q.hints!=null){
+    if(!Array.isArray(q.hints)||q.hints.length>3||q.hints.some(h=>!length(h,1,500)))err('подсказки: от 1 до 3 непустых текстов до 500 символов','hints');
+    else if(q.hints.length&&(!isClassic(d)||Number(q.points)!==2||q.partial||r.rules?.stakes?.some(n=>n!==0)||r.rules?.stake_policy?.some(p=>p.correct_bonus!==0||p.wrong!==0)))err('вопрос с подсказками: 2 балла, точный зачёт и без ставок в туре','hints');
+   }
    for(const key of ['media','answer_media'])if(!media(q[key]))err('медиа должно иметь тип и HTTPS-ссылку',key);
   });
  });return errors.concat(classicErrors(d));
@@ -52,7 +56,8 @@ export function importQuiz(value){
    if(q.correct!=null&&(!Array.isArray(q.correct)||q.correct.length>8||q.correct.some(i=>!Number.isInteger(i))))throw Error('Некорректные правильные ответы');
    if(q.accepted!=null&&(!Array.isArray(q.accepted)||q.accepted.length>30))throw Error('Некорректные текстовые ответы');
    for(const key of ['points','duration'])if(!['number','string'].includes(typeof q[key])||String(q[key]).length>30)throw Error('Некорректные баллы или время');
-   return {text:text(q.text,500),kind:q.kind,options:(q.options||[]).map(o=>text(o,200)),correct:q.correct||[],accepted:(q.accepted||[]).map(a=>text(a,500)),points:q.points,duration:q.duration,partial:!!q.partial,case_sensitive:!!q.case_sensitive,explanation:text(q.explanation,2000),animation:q.animation==='fade'?'fade':'none',media:media(q.media),answer_media:media(q.answer_media)};
+   if(q.hints!=null&&(!Array.isArray(q.hints)||q.hints.length>3))throw Error('В вопросе может быть до трёх подсказок');
+   return {text:text(q.text,500),kind:q.kind,options:(q.options||[]).map(o=>text(o,200)),correct:q.correct||[],accepted:(q.accepted||[]).map(a=>text(a,500)),...(q.hints==null?{}:{hints:q.hints.map(h=>text(h,500))}),points:q.points,duration:q.duration,partial:!!q.partial,case_sensitive:!!q.case_sensitive,explanation:text(q.explanation,2000),animation:q.animation==='fade'?'fade':'none',media:media(q.media),answer_media:media(q.answer_media)};
   })};
  })};
  if(countQuestions(result)>50)throw Error('В квизе может быть не больше 50 вопросов');

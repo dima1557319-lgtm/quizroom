@@ -1,4 +1,4 @@
-import {roundRules,rulesText,stakePolicy} from './classic-document.js?v=classic3';
+import {roundRules,rulesText,stakePolicy} from './classic-document.js?v=hints1';
 export function editRoundRules(parent,round,{field,select,check,refresh}){
  const box=document.createElement('details');box.open=true;const title=document.createElement('summary');title.textContent='Правила и сценарий тура';box.append(title);parent.append(box);
  const s=round.rules||=roundRules();
