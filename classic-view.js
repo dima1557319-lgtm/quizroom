@@ -74,11 +74,10 @@ export function renderClassic(data,request){
   const soundToggle=node('button');soundToggle.type='button';soundToggle.dataset.countdownSound='true';
   const updateSoundIcon=()=>{const enabled=countdownSound.enabled;soundToggle.textContent=enabled?'🔊':'🔇';soundToggle.setAttribute('aria-pressed',String(enabled));soundToggle.setAttribute('aria-label',enabled?'Выключить звук таймера':'Включить звук таймера');soundToggle.title=enabled?'Звук таймера включён':'Звук таймера выключен';};updateSoundIcon();soundToggle.addEventListener('click',()=>{countdownSound.toggle();updateSoundIcon();});root.append(soundToggle);
   const rules=node('details');rules.className='classic-round-rules';rules.open=c.phase==='intro';rules.append(node('summary','Правила этого тура'),roundRulesView(c.rules));root.append(rules);
-  const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
+  const toggle=node('button',screen?'Вернуться к своим ответам':'Показать общий экран без моих ответов');toggle.type='button';toggle.className='secondary classic-screen-toggle';toggle.addEventListener('click',()=>{screen=!screen;signature='';renderClassic(latest,requester);});root.append(toggle);
   if(c.phase==='media_wait')root.append(node('p','Воспроизведите фрагмент на общем экране. Организатор запустит обсуждение после окончания фрагмента; при ошибке загрузки время на ответ не расходуется.'));
   if(c.submitted)root.append(node('p','Бланк сдан. Ответы и ставки зафиксированы.'));
-  if(c.phase==='intro')root.append(node('p','Все готовы? Организатор начинает тур.'));
-  else if(!['break','round_results'].includes(c.phase)){
+  if(c.phase!=='intro'&&!['break','round_results'].includes(c.phase)){
    const qs=c.rules.submission==='question'&&['question','question_done','answer','media_wait'].includes(c.phase)?c.questions.filter(q=>q.number===c.cursor):c.questions;
    for(const q of qs){const card=makeQuestion(q,c);if(screen)card.querySelector('form').hidden=true;root.append(card);}
   }
@@ -91,7 +90,7 @@ export function renderClassic(data,request){
     const dialog=node('dialog');dialog.append(node('h3','Сдать тур?'),node('p',`Пустых ответов: ${blanks}. После сдачи изменить ответы и ставки нельзя.`));const cancel=node('button','Продолжить редактирование'),confirm=node('button','Подтвердить сдачу');cancel.onclick=()=>dialog.close();confirm.onclick=async()=>{confirm.disabled=true;try{await send('classic_submit_round',{p_round:c.round_no});dialog.close();}catch(error){dialog.append(node('p',error.message));confirm.disabled=false;}};dialog.append(cancel,confirm);dialog.addEventListener('close',()=>dialog.remove());root.append(dialog);dialog.showModal();
    });root.append(submit);
   }
-  const label=classicActionLabel(c);if(data.can_control&&label){const next=node('button',label);next.type='button';next.dataset.classicControl='true';next.addEventListener('click',async()=>{next.disabled=true;try{await send('classic_action',{p_action:c.phase==='media_wait'?'media_ready':'advance',p_version:c.version});}catch(error){root.append(node('p',error.message));}finally{tick();}});root.append(next);}
+  const label=classicActionLabel(c);if(data.can_control&&label){const next=node('button',label);next.type='button';next.dataset.classicControl='true';if(c.phase==='intro')next.className='classic-start-round';next.addEventListener('click',async()=>{next.disabled=true;try{await send('classic_action',{p_action:c.phase==='media_wait'?'media_ready':'advance',p_version:c.version});}catch(error){root.append(node('p',error.message));}finally{tick();}});if(c.phase==='intro')root.insertBefore(next,toggle);else root.append(next);}
   if(c.phase==='intro')prepareClassicMedia(root,c.preflight,value=>{preflightReady=value;tick();});
  }
  for(const q of c.questions){const status=root.querySelector(`[data-draft-status="${q.id}"]`);if(status){const value=valueFor(q),server=fromServer(q.id);status.textContent=value.dirty?(value.revision!==server.revision?'Серверный ответ изменился. Загрузите его перед дальнейшей правкой.':'Не отправлено. Сохраните ответ.'):server.locked?'Ответ зафиксирован':server.revision?'Сохранено на сервере':'Ответ ещё не сохранён';root.querySelector(`[data-restore="${q.id}"]`).hidden=!value.dirty&&value.revision===server.revision;}}
