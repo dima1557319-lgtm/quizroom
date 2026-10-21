@@ -49,3 +49,10 @@ html[data-theme="light"] #classicGame .classic-card-countdown.is-urgent{backgrou
 html[data-theme="light"] #classicGame button[data-countdown-sound]{background:#f0eafb;border-color:#c5b3dd}
 html[data-theme="light"] #classicGame .classic-rules-list>li>strong{color:#6233b6}
 @media(max-width:540px){#classicGame .classic-rules-list{grid-template-columns:1fr}}
+
+#classicGame button.classic-start-round{display:block;width:100%;padding:18px 22px;min-height:58px;border:1px solid #4ade80;border-radius:14px;background:#15803d;color:#fff;font-size:20px;font-weight:750;text-align:center;box-shadow:0 5px 18px #15803d33}
+#classicGame button.classic-start-round:hover:not(:disabled){background:#166534}
+#classicGame button.classic-screen-toggle{display:block;width:100%;margin:10px 0;padding:12px 16px;border:1px solid #655780;border-radius:12px;background:#ffffff05;color:#b8b4c9;font-size:14px;font-weight:400;box-shadow:none;text-align:center}
+#classicGame button.classic-screen-toggle:hover{background:#ffffff0c;color:#f5f6ff}
+html[data-theme="light"] #classicGame button.classic-screen-toggle{background:#f7f5fa;color:#665c74;border-color:#d4c9e5}
+html[data-theme="light"] #classicGame button.classic-start-round{background:#15803d;color:#fff;border-color:#166534}

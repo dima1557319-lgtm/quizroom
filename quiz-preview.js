@@ -1,10 +1,10 @@
-import {renderRichGame} from './rich-game.js?v=answers1';
+import {renderRichGame} from './rich-game.js?v=start1';
 let latest;function renderGame(data,answer){latest=data;renderRichGame(data,answer);tick();}
 function tick(){if(!latest)return;const seconds=Math.max(0,Math.ceil((Date.parse(latest.question.deadline)-Date.now())/1000));document.getElementById('gameTimer').textContent=latest.phase==='question'?`Осталось: ${seconds} сек.`:'';for(const control of document.querySelectorAll('[data-rich-answer]'))control.disabled=latest.phase!=='question'||latest.my_response!=null||seconds===0;}
 setInterval(tick,250);
 import {validateQuiz,importQuiz} from './studio-document.js?v=classic3';
 import {isClassic} from './classic-document.js?v=classic3';
-import {startClassicPreview} from './classic-preview.js?v=answers1';
+import {startClassicPreview} from './classic-preview.js?v=start1';
 const $=id=>document.getElementById(id);let doc,questions=[],index=0,phase='question',started=Date.now(),responses=[],scores=[],graded=[];
 function points(q,response){
  if(q.kind==='manual')return 0;

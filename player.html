@@ -9,11 +9,11 @@
 .player-tools{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}.player-tools details{flex:1 1 180px;min-width:0;border:1px solid #655780;border-radius:12px;padding:12px}.player-tools summary{cursor:pointer;font-size:15px;font-weight:700}.player-tools details[open]{flex-basis:100%}.player-tools h2{font-size:19px}.player-tools p,.player-tools li{font-size:15px}.player-tools #accessBackup{margin:12px 0;padding:12px}#connection:not([hidden]){padding:12px;border:1px solid #fb7185;border-radius:10px}html[data-theme=light] .player-tools details{border-color:#c5b3dd}</style>
 <link rel="stylesheet" href="./theme.css?v=20261015-blue-purple">
 <link rel="stylesheet" href="./rich-game.css?v=fold1">
-<link rel="stylesheet" href="./classic.css?v=media1">
+<link rel="stylesheet" href="./classic.css?v=start1">
 <main><h1>QuizRoom</h1><p id="identity"></p><p id="status" role="status">Подключаемся…</p>
 <section id="game" hidden><h2 id="roundTitle"></h2><p id="gameTimer" role="timer"></p><h3 id="questionText"></h3><div id="options"></div><p id="answerStatus" role="status"></p><section id="roundBreak" hidden></section></section>
 <section id="everyoneControls" hidden><div id="inviteRoom" hidden><p>Пригласите друзей — до 20 игроков</p><div id="playerQr"></div><p><a id="playerJoinLink">Войти по ссылке</a></p></div><button id="everyoneStart" type="button" hidden>Начать игру</button><button id="everyoneNext" type="button" hidden>Следующий вопрос</button></section>
 <p id="error" role="alert"></p><p id="connection" role="status" hidden></p><section id="results" hidden></section>
 <nav class="player-tools" aria-label="Дополнительно к игре"><details><summary>Таблица очков</summary><h2 id="rankingTitle" hidden>Таблица очков</h2><ul id="ranking" style="list-style:none;padding:0"></ul></details><details><summary>Меню игры</summary><p id="organizerStatus" role="status"></p><details id="accessBackup"><summary>Вернуться к игре позже</summary><p>Перед закрытием вкладки сохраните файл доступа. Он позволит вернуться через страницу восстановления.</p><button id="saveAccess" type="button">Сохранить доступ к комнате</button><p id="accessStatus" role="status"></p></details><p><a href="./restore.html">Восстановить доступ к комнате</a></p><p><a href="./join.html">Вход в комнату</a></p><p><a href="./index.html">← На главную QuizRoom</a></p></details></nav></main>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script defer src="./player-boot.js?v=answers1"></script></html>
+<script defer src="./player-boot.js?v=start1"></script></html>
