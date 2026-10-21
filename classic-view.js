@@ -1,5 +1,5 @@
 import {CountdownSound} from './countdown-sound.js?v=tick1';
-import {prepareClassicMedia} from './classic-preflight.js?v=classic3';
+import {prepareClassicMedia} from './classic-preflight.js?v=media1';
 import {stakePolicy} from './classic-document.js?v=classic3';
 import {renderMedia} from './quiz-media.js?v=studio1';
 const node=(tag,text)=>{const e=document.createElement(tag);if(text!=null)e.textContent=text;return e;};
